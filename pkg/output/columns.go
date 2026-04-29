@@ -40,6 +40,34 @@ var VMListColumns = []Column{
 	}},
 }
 
+// ClusterListColumns 是 cluster.ls 的表格列定义。
+var ClusterListColumns = []Column{
+	{Header: "ID", Get: func(v any) string { return v.(adapter.Cluster).ID }},
+	{Header: "NAME", Get: func(v any) string { return v.(adapter.Cluster).Name }},
+	{Header: "CPU CORES", Get: func(v any) string { return fmt.Sprintf("%d", v.(adapter.Cluster).TotalCPUCores) }},
+	{Header: "MEMORY", Get: func(v any) string { return HumanBytes(v.(adapter.Cluster).TotalMemoryBytes) }},
+	{Header: "STORAGE", Get: func(v any) string { return HumanBytes(v.(adapter.Cluster).TotalDataCapacity) }},
+	{Header: "VMs", Get: func(v any) string { return fmt.Sprintf("%d", v.(adapter.Cluster).RunningVMs) }},
+}
+
+// DatastoreListColumns 是 datastore.ls 的表格列定义。
+var DatastoreListColumns = []Column{
+	{Header: "ID", Get: func(v any) string { return v.(adapter.Datastore).ID }},
+	{Header: "NAME", Get: func(v any) string { return v.(adapter.Datastore).Name }},
+	{Header: "TYPE", Get: func(v any) string { return v.(adapter.Datastore).Type }},
+	{Header: "CLUSTER", Get: func(v any) string { return v.(adapter.Datastore).ClusterID }},
+}
+
+// DiskListColumns 是 datastore.disk.ls 的表格列定义。
+var DiskListColumns = []Column{
+	{Header: "ID", Get: func(v any) string { return v.(adapter.Disk).ID }},
+	{Header: "NAME", Get: func(v any) string { return v.(adapter.Disk).Name }},
+	{Header: "TYPE", Get: func(v any) string { return v.(adapter.Disk).Type }},
+	{Header: "SIZE", Get: func(v any) string { return HumanBytes(v.(adapter.Disk).SizeBytes) }},
+	{Header: "HOST", Get: func(v any) string { return v.(adapter.Disk).HostName }},
+	{Header: "PATH", Get: func(v any) string { return v.(adapter.Disk).Path }},
+}
+
 // HostListColumns 是 host.ls 的表格列定义。
 var HostListColumns = []Column{
 	{Header: "ID", Get: func(v any) string { return v.(adapter.Host).ID }},

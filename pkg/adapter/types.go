@@ -56,6 +56,36 @@ type ListOpts struct {
 	Skip         int32
 }
 
+// Cluster 是 CLI 内部用的集群视图。
+type Cluster struct {
+	ID               string
+	Name             string
+	TotalMemoryBytes uint64
+	TotalDataCapacity uint64
+	UsedDataSpace    uint64
+	TotalCPUCores    int32
+	RunningVMs       int32
+}
+
+// Datastore 是 CLI 内部用的数据存储视图。
+type Datastore struct {
+	ID        string
+	Name      string
+	Type      string
+	Internal  bool
+	ClusterID string
+}
+
+// Disk 是 CLI 内部用的磁盘视图。
+type Disk struct {
+	ID        string
+	Name      string
+	Type      string
+	SizeBytes uint64
+	Path      string
+	HostName  string
+}
+
 // Host 是 CLI 内部用的主机视图。
 type Host struct {
 	ID              string
