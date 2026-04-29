@@ -40,7 +40,20 @@ var VMListColumns = []Column{
 	}},
 }
 
-// VMInfoRows 是 vm.info 的详情行（key-value 展示）。
+// SnapshotListColumns 是 vm.snapshot.ls 的表格列定义。
+var SnapshotListColumns = []Column{
+	{Header: "ID", Get: func(v any) string { return v.(adapter.Snapshot).ID }},
+	{Header: "NAME", Get: func(v any) string { return v.(adapter.Snapshot).Name }},
+	{Header: "VM", Get: func(v any) string { return v.(adapter.Snapshot).VMID }},
+	{Header: "CREATED", Get: func(v any) string {
+		c := v.(adapter.Snapshot).CreatedAt
+		if c == "" {
+			return "-"
+		}
+		return c
+	}},
+	{Header: "DESCRIPTION", Get: func(v any) string { return v.(adapter.Snapshot).Description }},
+}
 var VMInfoColumns = []Column{
 	{Header: "FIELD", Get: func(_ any) string { return "" }},
 	{Header: "VALUE", Get: func(_ any) string { return "" }},

@@ -56,6 +56,15 @@ type ListOpts struct {
 	Skip         int32
 }
 
+// Snapshot 是 CLI 内部用的快照视图。
+type Snapshot struct {
+	ID          string
+	Name        string
+	VMID        string
+	Description string
+	CreatedAt   string // local_created_at 原样传出
+}
+
 // VMCreateSpec 是 vm.create 命令需要的参数集合。
 type VMCreateSpec struct {
 	Name        string
