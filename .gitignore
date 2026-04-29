@@ -21,3 +21,7 @@ coverage.out
 
 # Local working memory (per-machine, not part of source)
 .workbuddy/
+
+# External reference docs (cloned on demand, not part of source)
+# See docs/references/README.md for instructions to restore.
+docs/references/cloudtower-skills/

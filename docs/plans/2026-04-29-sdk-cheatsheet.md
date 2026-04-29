@@ -603,8 +603,70 @@ type VMVlanCreationParams struct {
 - `utils.CompareBigIntStrings(*string, *string) (int, error)`
 - iso_utils.go：包含一个简短的 ISO 工具函数（本次未涉及）
 
+## 附录 D：来自 cloudtower-skills OpenAPI 文档的补充语义
+
+该资料库已 clone 到 `docs/references/cloudtower-skills/`（不入 git，按需重 clone）。
+以下几条是 SDK README 未明确强调、但会直接影响 service 层正确性的关键语义：
+
+### D1. 写操作的同步/异步判定
+
+CloudTower 写 op 返回数组 `[]WithTask_<Resource>_`，每个元素含 `task_id`：
+- `task_id != null` → 异步操作，必须调 `task.Watch` 等待完成
+- `task_id == null` → 同步操作，调用返回时已完成，不应再 Watch
+
+**对 adapter 的要求**：返回 `TaskRef{ID: ""}` 作为同步标记。
+**对 service 的要求**：`RunWithTask` 内部判空，空则跳过 Watcher 直接返回成功。
+
+```go
+// pkg/service/task.go 伪代码
+func RunWithTask(ctx context.Context, op func() (TaskRef, error), w Watcher) error {
+    ref, err := op()
+    if err != nil { return err }
+    if ref.ID == "" { return nil } // 同步完成
+    return w.Watch(ctx, ref.ID)
+}
+```
+
+### D2. 写操作响应的 data 语义
+
+成功响应（HTTP 200）**不代表 op 完成**；返回 body 中的 `data` 数组（除 `id` 字段外）应视为临时占位。
+
+**对 service 的要求**：异步写操作完成后，若需要回显最新状态（例如 `vm.power.on` 后想打印 VM 当前 status），必须重新 `GetVM(id)` 拉取，不能直接用写 op 的 data 字段。
+
+### D3. 认证 source 默认值权威说明
+
+`LoginInput.source` 枚举：`AUTHN` / `LDAP` / `LOCAL` / `SSO`。
+**未指定时默认 `LOCAL`**（cloudtower-skills/authentication.md 明确声明）。
+
+我们当前 adapter 实现已使用 `models.UserSourceLOCAL`，与文档一致。后续若加 `--auth-source` 标志，需保留 LOCAL 默认。
+
+### D4. 同源 vs 强制变体不要合并
+
+CloudTower 多个资源都有「优雅 / 强制」两个独立 op，adapter 应分别保留：
+
+| 优雅 | 强制 | adapter PowerAction |
+| --- | --- | --- |
+| `shutdown-vm` | `poweroff-vm` | `Off`（force=true 走强制） |
+| `restart-vm` | `force-restart-vm` | `Reset`（force=true 走强制） |
+
+不能为了简化把强制路径删掉——管理员运维场景里，VMTools 缺失时只有强制路径能成功。
+
+### D5. operations/ 与 SDK 子包的对照速查
+
+需要查某个 op 的请求/响应 schema 时：
+
+```
+docs/references/cloudtower-skills/skills/cloudtower-api/references/operations/<OperationID>.md
+```
+
+`OperationID` 通常是 SDK 方法名的 PascalCase（去掉 client. 前缀），例如：
+- SDK `client.VM.StartVM` → `operations/StartVm.md`
+- SDK `client.VM.RollbackVM` → `operations/RollbackVm.md`
+- SDK `client.VMSnapshot.CreateVMSnapshot` → `operations/CreateVmSnapshot.md`
+
 ---
 
 **审计追踪**
 
 - 2026-04-29 10:55 通过 code-explorer subagent 探查 SDK v2.22.1 全部 Tier-1 子包真实签名后写入。
+- 2026-04-29 11:10 追加附录 D：来自 cloudtower-skills OpenAPI 文档的同步/异步语义、写操作 data 语义、认证默认值与 op 对照表。
