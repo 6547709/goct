@@ -155,17 +155,70 @@ var VMInfoColumns = []Column{
 	{Header: "VALUE", Get: func(_ any) string { return "" }},
 }
 
-// VMInfoRows 返回 VM 的 key-value 行用于 info 展示。
+// VMInfoRows 返回 VM 的 key-value 行用于 info 展示（~22 行，操作友好）。
 func VMInfoRows(v adapter.VM) [][]string {
+	ips := v.IPs
+	if len(ips) == 0 {
+		ips = []string{"-"}
+	}
+	haStr := "false"
+	if v.Ha {
+		haStr = "true"
+	}
+	protectedStr := "false"
+	if v.Protected {
+		protectedStr = "true"
+	}
+	inBinStr := "false"
+	if v.InRecycleBin {
+		inBinStr = "true"
+	}
+	desc := v.Description
+	if desc == "" {
+		desc = "-"
+	}
+	dns := v.DNSServers
+	if dns == "" {
+		dns = "-"
+	}
+	hostname := v.Hostname
+	if hostname == "" {
+		hostname = "-"
+	}
+	clusterVal := v.ClusterID
+	if v.ClusterName != "" {
+		clusterVal = fmt.Sprintf("%s (%s)", v.ClusterName, v.ClusterID)
+	}
+	hostVal := v.HostName
+	if hostVal == "" {
+		hostVal = "-"
+	} else if v.HostIP != "" {
+		hostVal = fmt.Sprintf("%s [%s]", v.HostName, v.HostIP)
+	}
 	return [][]string{
-		{"ID", v.ID},
 		{"Name", v.Name},
+		{"ID", v.ID},
 		{"Status", v.Status},
 		{"VCPU", fmt.Sprintf("%d", v.VCPU)},
 		{"Memory", HumanBytes(v.MemoryBytes)},
-		{"IPs", strings.Join(v.IPs, ", ")},
-		{"Host", v.HostName},
-		{"Cluster", v.ClusterID},
-		{"Description", v.Description},
+		{"Firmware", v.Firmware},
+		{"Guest OS", v.GuestOS},
+		{"HA", haStr},
+		{"IPs", strings.Join(ips, ", ")},
+		{"Hostname", hostname},
+		{"DNS Servers", dns},
+		{"VMTools", v.VMToolsStatus},
+		{"VMTools Version", v.VMToolsVersion},
+		{"CPU Model", v.CPUModel},
+		{"Host", hostVal},
+		{"Cluster", clusterVal},
+		{"Disks", fmt.Sprintf("%d", v.DiskCount)},
+		{"NICs", fmt.Sprintf("%d", v.NicCount)},
+		{"Provisioned", HumanBytes(v.ProvisionedBytes)},
+		{"Used", HumanBytes(v.UsedBytes)},
+		{"In Recycle Bin", inBinStr},
+		{"Protected", protectedStr},
+		{"Created", v.CreatedAt},
+		{"Description", desc},
 	}
 }

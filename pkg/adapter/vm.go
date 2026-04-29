@@ -308,8 +308,74 @@ func toVM(v *models.VM) VM {
 	if v.Cluster != nil && v.Cluster.ID != nil {
 		out.ClusterID = *v.Cluster.ID
 	}
+	if v.Cluster != nil && v.Cluster.Name != nil {
+		out.ClusterName = *v.Cluster.Name
+	}
+	if v.Host != nil && v.Host.ID != nil {
+		out.HostID = *v.Host.ID
+	}
 	if v.Host != nil && v.Host.Name != nil {
 		out.HostName = *v.Host.Name
+	}
+	// HostIP: 优先用 Host.ManagementIP（宿主机 IP），兼容嵌套虚拟化场景（ NestedHost.ManagementIP）
+	if v.Host != nil && v.Host.ManagementIP != nil {
+		out.HostIP = *v.Host.ManagementIP
+	}
+	// Firmware: BIOS / UEFI
+	if v.Firmware != nil {
+		out.Firmware = string(*v.Firmware)
+	}
+	// Ha: 是否开启高可用
+	if v.Ha != nil {
+		out.Ha = *v.Ha
+	}
+	// GuestOS: Guest OS 类型
+	if v.GuestOsType != nil {
+		out.GuestOS = string(*v.GuestOsType)
+	}
+	// VMTools 状态和版本
+	if v.VMToolsStatus != nil {
+		out.VMToolsStatus = string(*v.VMToolsStatus)
+	}
+	if v.VMToolsVersion != nil {
+		out.VMToolsVersion = *v.VMToolsVersion
+	}
+	// CPU 型号
+	if v.CPUModel != nil {
+		out.CPUModel = *v.CPUModel
+	}
+	// DNS 服务器
+	if v.DNSServers != nil {
+		out.DNSServers = *v.DNSServers
+	}
+	// 主机名（Guest 内）
+	if v.Hostname != nil {
+		out.Hostname = *v.Hostname
+	}
+	// 磁盘/网卡数量
+	if v.VMDisks != nil {
+		out.DiskCount = len(v.VMDisks)
+	}
+	if v.VMNics != nil {
+		out.NicCount = len(v.VMNics)
+	}
+	// 存储：已分配（ProvisionedSize）和实际使用（UsedSize）
+	if v.ProvisionedSize != nil {
+		out.ProvisionedBytes = uint64(*v.ProvisionedSize)
+	}
+	if v.UsedSize != nil {
+		out.UsedBytes = uint64(*v.UsedSize)
+	}
+	// 回收站/保护状态
+	if v.InRecycleBin != nil {
+		out.InRecycleBin = *v.InRecycleBin
+	}
+	if v.Protected != nil {
+		out.Protected = *v.Protected
+	}
+	// 创建时间（本地时区格式）
+	if v.LocalCreatedAt != nil {
+		out.CreatedAt = *v.LocalCreatedAt
 	}
 	return out
 }

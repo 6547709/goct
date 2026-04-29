@@ -22,15 +22,33 @@ type TowerInfo struct {
 
 // VM 是 CLI 内部用的虚拟机视图。
 type VM struct {
-	ID          string
-	Name        string
-	Status      string // 例：RUNNING / STOPPED / SUSPENDED
-	ClusterID   string
-	HostName    string
-	VCPU        int32
-	MemoryBytes uint64
-	IPs         []string
-	Description string
+	ID              string
+	Name            string
+	Status          string // 例：RUNNING / STOPPED / SUSPENDED
+	ClusterID       string
+	ClusterName     string
+	HostID          string
+	HostName        string
+	HostIP          string
+	VCPU            int32
+	MemoryBytes     uint64
+	Firmware        string // BIOS / UEFI
+	Ha              bool
+	GuestOS         string // LINUX / WINDOWS / UNKNOWN
+	VMToolsStatus   string // RUNNING / NOT_RUNNING / NOT_INSTALLED / RESTRICTION
+	VMToolsVersion  string
+	CPUModel        string
+	IPs             []string
+	DNSServers      string
+	Hostname        string
+	DiskCount       int
+	NicCount        int
+	ProvisionedBytes uint64
+	UsedBytes       uint64
+	InRecycleBin    bool
+	Protected       bool
+	CreatedAt       string
+	Description     string
 }
 
 // TaskRef 是写操作返回的 task 引用。
