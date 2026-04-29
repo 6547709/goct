@@ -6,8 +6,9 @@
 
 - **52 个 Tier-1 命令**，覆盖 VM / 快照 / 主机 / 集群 / 存储 / 网络 / VLAN / 任务 / 告警 / 用户
 - **govc 点分命名**：`goct vm.ls`、`goct host.maintenance.enter`、`goct vm.power.on`
+- **govc 风格对象传递**：位置参数 > `GOCT_VM`/`GOCT_HOST` 环境变量 > stdin 管道，支持脚本批量操作
 - **三层架构**：`cmd/` → `pkg/service/` → `pkg/adapter/`，仅 adapter 层 import SDK
-- **自动化友好**：table（默认）/ JSON 双输出；错误走 stderr、数据走 stdout
+- **自动化友好**：table（默认）/ JSON 双输出；`--id-only` 每行输出 ID；错误走 stderr、数据走 stdout
 - **Session 缓存**：自动缓存 token 到 `$XDG_CACHE_HOME/goct/`，401 自动刷新
 - **自签名 TLS**：`--insecure` 跳过证书验证（内网常见场景）
 - **Task Watcher**：变更命令自动追踪异步任务进度
@@ -72,6 +73,8 @@ source: local   # local | ldap | sso | authn
 | `GOCT_SOURCE` | 登录源（`local`/`ldap`/`sso`/`authn`） | `local` |
 | `GOCT_LOG` | 日志级别（`TRACE`/`DEBUG`/`INFO`/`WARN`/`ERROR`） | 关闭 |
 | `GOCT_LOG_FILE` | 日志文件路径（默认 stderr） | stderr |
+| `GOCT_VM` | VM 标识（ID 或名称），可替代命令位置参数 | - |
+| `GOCT_HOST` | 主机标识（ID 或名称），可替代命令位置参数 | - |
 
 ## 命令矩阵
 
@@ -138,6 +141,66 @@ goct alert.ack <alert-id>
 goct session.login                    # 强制重新登录
 goct session.ls                       # 查看缓存
 goct session.logout --url https://tower.example.com --user admin
+```
+
+## 脚本化
+
+goct 模仿 govc 的 UX 模式，支持对象在脚本中上下传递。
+
+### 对象解析优先级
+
+对于 `vm.*` 和 `host.*` 命令，标识符解析顺序为：
+
+1. **命令行位置参数**（如 `goct vm.info my-vm`）
+2. **环境变量** `GOCT_VM` / `GOCT_HOST`
+3. **stdin 管道**（如 `echo my-vm | goct vm.info`）
+
+> 与 govc 完全一致：`GOVC_VM` > stdin > 位置参数（govc 是 env 优先于位置参数）
+
+### GOCT_VM / GOCT_HOST 环境变量
+
+设置后，命令无需每次传 VM/Host 标识：
+
+```bash
+export GOCT_VM=my-vm
+goct vm.info              # 读 GOCT_VM
+goct vm.power.off --force # 读 GOCT_VM
+unset GOCT_VM
+```
+
+### stdin 管道
+
+**仅当 stdin 非 TTY（管道/重定向）时才会读取**，不会阻塞交互式终端：
+
+```bash
+# 从 vm.ls --id-only 获取 ID，传递给 vm.info
+goct vm.ls --id-only | while read id; do
+  echo "=== VM Info ==="
+  echo "$id" | goct vm.info
+done
+
+# 结合 jq 过滤后再 pipe
+goct vm.ls --format json | jq -r '.[] | select(.Status=="RUNNING") | .ID' | goct vm.power.off --force
+
+# 批量从文件读取
+cat vms.txt | goct vm.info
+```
+
+### --id-only 输出
+
+所有 `*.ls` 命令支持 `--id-only`，每行仅输出 ID，适合脚本处理：
+
+```bash
+# 导出所有 VM ID
+goct vm.ls --id-only > vm-ids.txt
+
+# 批量操作
+for id in $(goct vm.ls --id-only); do
+  goct vm.power.off $id --force
+done
+
+# 结合 grep 过滤
+goct host.ls --id-only | grep "192.168."
 ```
 
 ## 退出码
