@@ -14,16 +14,26 @@ import (
 	"github.com/6547709/goct/pkg/adapter"
 )
 
-// uuidRe 匹配标准 UUID（含/不含连字符，36/32 位均可）。
-// CloudTower ID 是标准 36 字符 UUID。
+// uuidRe 匹配标准 UUID（36 字符）。
 var uuidRe = regexp.MustCompile(`^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$`)
 
-// IsUUID 报告 s 是否为标准 UUID 格式。
+// cuidRe 匹配 CloudTower cuid 格式（以 cl 开头，25-27 字符字母数字）。
+var cuidRe = regexp.MustCompile(`^cl[0-9a-z]{23,25}$`)
+
+// IsID 报告 s 是否看起来像一个 ID（UUID 或 cuid），而非用户可读的名称。
+// CloudTower 同时使用两种 ID 格式：
+//   - 标准 UUID：5e52cf6e-1e8c-4a0a-9e3a-1b2c3d4e5f6a
+//   - cuid：cl5k7g2xo04070822fhxjfsev9q
+func IsID(s string) bool {
+	return uuidRe.MatchString(s) || cuidRe.MatchString(s)
+}
+
+// IsUUID 保留向后兼容。
 func IsUUID(s string) bool { return uuidRe.MatchString(s) }
 
 // Resolve 是通用 name|id 解析器。
 //
-// 如果 idOrName 是 UUID → 直接 get(id)
+// 如果 idOrName 看起来像 ID（UUID 或 cuid）→ 直接 get(id)
 // 否则 → list(nameContains) → 精确匹配 → 0=NotFound / 1=OK / >1=Ambiguous
 func Resolve[T any](
 	ctx context.Context,
@@ -32,7 +42,7 @@ func Resolve[T any](
 	extract func(T) (id, name string),
 	idOrName string,
 ) (*T, error) {
-	if IsUUID(idOrName) {
+	if IsID(idOrName) {
 		return get(ctx, idOrName)
 	}
 	all, err := list(ctx, adapter.ListOpts{NameContains: idOrName})

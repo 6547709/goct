@@ -147,3 +147,28 @@ func TestResolver_IsUUID(t *testing.T) {
 		}
 	}
 }
+
+func TestResolver_IsID(t *testing.T) {
+	tests := []struct {
+		in   string
+		want bool
+	}{
+		// UUID
+		{"aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", true},
+		{"5e52cf6e-1e8c-4a0a-9e3a-1b2c3d4e5f6a", true},
+		// cuid (CloudTower style)
+		{"cl5k7g2xo04070822fhxjfsev9q", true},
+		{"cl0000000000000000000000000", true},
+		// Not IDs
+		{"my-vm-name", false},
+		{"web-server-01", false},
+		{"", false},
+		{"cl", false},       // too short
+		{"CL5K7G2XO04070822FHXJFSEV9Q", false}, // cuid is lowercase
+	}
+	for _, tt := range tests {
+		if got := IsID(tt.in); got != tt.want {
+			t.Errorf("IsID(%q) = %v, want %v", tt.in, got, tt.want)
+		}
+	}
+}
