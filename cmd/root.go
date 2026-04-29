@@ -17,6 +17,7 @@ import (
 	usercmd "github.com/6547709/goct/cmd/user"
 	"github.com/6547709/goct/pkg/client"
 	"github.com/6547709/goct/pkg/config"
+	"github.com/6547709/goct/pkg/debug"
 	"github.com/6547709/goct/pkg/flags"
 	"github.com/spf13/cobra"
 )
@@ -34,8 +35,12 @@ var rootCmd = &cobra.Command{
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	PersistentPreRunE: func(c *cobra.Command, _ []string) error {
+		// 初始化分级日志（GOCT_LOG=TRACE|DEBUG|INFO|WARN|ERROR）
+		debug.Init()
+
 		// 带 nologin 注解的命令跳过 client 构造（如 goct version/session.*）
 		if c.Annotations["nologin"] == "true" {
+			debug.Debugf("skipping login for command %q (nologin annotation)", c.Name())
 			return nil
 		}
 		cfg, err := config.Resolve(config.Override{
@@ -50,10 +55,13 @@ var rootCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
+		debug.Debugf("resolved config: url=%s user=%s cluster=%s insecure=%v source=%s",
+			cfg.URL, cfg.Username, cfg.Cluster, cfg.Insecure, cfg.Source)
 		cli, err := client.New(c.Context(), cfg)
 		if err != nil {
 			return err
 		}
+		debug.Info("client created, login successful")
 		c.SetContext(client.With(c.Context(), cli))
 		return nil
 	},

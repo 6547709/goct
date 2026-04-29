@@ -16,6 +16,8 @@ import (
 	apiclient "github.com/smartxworks/cloudtower-go-sdk/v2/client"
 	userPkg "github.com/smartxworks/cloudtower-go-sdk/v2/client/user"
 	"github.com/smartxworks/cloudtower-go-sdk/v2/models"
+
+	"github.com/6547709/goct/pkg/debug"
 )
 
 // 业务级错误哨兵；可被上层 errors.Is 识别用于映射 exit code。
@@ -77,15 +79,18 @@ func NewClient(_ context.Context, opts Options) (Client, SessionToken, error) {
 	if err != nil {
 		return nil, SessionToken{}, err
 	}
+	debug.Debugf("adapter: connecting to %s (basePath=%s, insecure=%v)", host, basePath, opts.Insecure)
 	tr := newTransport(host, basePath, schemes, opts.Insecure)
 
 	if opts.Token != "" {
+		debug.Debug("adapter: reusing cached token (skip login)")
 		tr.DefaultAuthentication = httptransport.APIKeyAuth("Authorization", "header", opts.Token)
 		api := apiclient.New(tr, strfmt.Default)
 		return &defaultClient{api: api, transport: tr}, SessionToken{Value: opts.Token}, nil
 	}
 
 	api := apiclient.New(tr, strfmt.Default)
+	debug.Debugf("adapter: performing login as %q (source=%s)", opts.Username, opts.Source)
 	tok, err := login(api, tr, opts)
 	if err != nil {
 		return nil, SessionToken{}, err

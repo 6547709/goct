@@ -17,6 +17,7 @@ import (
 
 	"github.com/6547709/goct/pkg/adapter"
 	"github.com/6547709/goct/pkg/config"
+	"github.com/6547709/goct/pkg/debug"
 	"github.com/6547709/goct/pkg/session"
 )
 
@@ -32,6 +33,7 @@ func New(ctx context.Context, cfg config.Resolved) (adapter.Client, error) {
 	// 步骤 1：尝试 session cache
 	if cfg.Username != "" {
 		if tok, err := session.Load(host, cfg.Username); err == nil {
+			debug.Debugf("client: session cache hit for %s@%s", cfg.Username, host)
 			c, _, e := adapter.NewClient(ctx, adapter.Options{
 				URL:      cfg.URL,
 				Insecure: cfg.Insecure,
@@ -41,6 +43,7 @@ func New(ctx context.Context, cfg config.Resolved) (adapter.Client, error) {
 				return c, nil
 			}
 			// token 不可用（401 或网络问题）→ 清掉缓存，走完整登录
+			debug.Warnf("client: cached token invalid, clearing and re-login")
 			_ = session.Delete(host, cfg.Username)
 		}
 	}

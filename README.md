@@ -40,9 +40,13 @@ goct --url https://tower.example.com --username admin --password secret vm.ls
 export GOCT_URL=https://tower.example.com
 export GOCT_USERNAME=admin
 export GOCT_PASSWORD=secret
-export GOCT_INSECURE=true   # 自签名证书
+export GOCT_INSECURE=true    # 自签名证书
+export GOCT_CLUSTER=clusterX # 默认集群（ID 或名称），设置后无需每次传 --cluster
+export GOCT_SOURCE=local     # 登录源：local|ldap|sso|authn
 goct vm.ls
 ```
+
+> 💡 **设置 `GOCT_CLUSTER` 后**，所有需要集群参数的命令（如 `vm.create`）会自动使用该默认值，无需每次传递 `--cluster`。
 
 ### 方式三：配置文件 `~/.goct.yaml`
 
@@ -55,6 +59,19 @@ source: local   # local | ldap | sso | authn
 ```
 
 **优先级**：CLI flag > 环境变量 > 配置文件
+
+### 完整环境变量列表
+
+| 变量 | 说明 | 默认值 |
+|---|---|---|
+| `GOCT_URL` | CloudTower 地址 | - |
+| `GOCT_USERNAME` | 登录用户名 | - |
+| `GOCT_PASSWORD` | 登录密码 | - |
+| `GOCT_CLUSTER` | 默认集群 ID 或名称 | - |
+| `GOCT_INSECURE` | 跳过 TLS 验证（`true`/`false`） | `false` |
+| `GOCT_SOURCE` | 登录源（`local`/`ldap`/`sso`/`authn`） | `local` |
+| `GOCT_LOG` | 日志级别（`TRACE`/`DEBUG`/`INFO`/`WARN`/`ERROR`） | 关闭 |
+| `GOCT_LOG_FILE` | 日志文件路径（默认 stderr） | stderr |
 
 ## 命令矩阵
 
@@ -132,6 +149,37 @@ goct session.logout --url https://tower.example.com --user admin
 | 2 | 认证失败 |
 | 3 | 资源未找到 |
 | 4 | 异步任务失败 |
+
+## 调试日志
+
+通过环境变量 `GOCT_LOG` 启用分级日志（参考 Packer 的 `PACKER_LOG` 设计）：
+
+```bash
+# 关闭日志（默认）
+goct vm.ls
+
+# INFO 级别：登录成功、命令执行等关键事件
+GOCT_LOG=INFO goct vm.ls
+
+# DEBUG 级别：config 解析、session 缓存命中/miss、adapter 调用详情
+GOCT_LOG=DEBUG goct vm.ls
+
+# TRACE 级别：最详细，含 SDK 请求/响应细节
+GOCT_LOG=TRACE goct vm.ls
+
+# 将日志写入文件（而非 stderr）
+GOCT_LOG=DEBUG GOCT_LOG_FILE=/tmp/goct.log goct vm.ls
+```
+
+| 级别 | 内容 |
+|---|---|
+| `TRACE` | SDK 请求/响应、参数展开 |
+| `DEBUG` | config 解析、session 缓存命中/miss、adapter 调用 |
+| `INFO` | 登录成功、命令执行 |
+| `WARN` | session 过期、token 刷新 |
+| `ERROR` | 仅错误 |
+
+> 日志全部走 stderr（或 `GOCT_LOG_FILE`），**不会污染 stdout 的业务输出**，`goct vm.ls | jq` 安全。
 
 ## 架构
 
