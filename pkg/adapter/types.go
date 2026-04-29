@@ -56,6 +56,29 @@ type ListOpts struct {
 	Skip         int32
 }
 
+// Network 是 CLI 内部用的虚拟交换机（VDS）视图。
+type Network struct {
+	ID        string
+	Name      string
+	Type      string
+	ClusterID string
+}
+
+// VLAN 是 CLI 内部用的 VLAN 视图。
+type VLAN struct {
+	ID      string
+	Name    string
+	VlanTag int32
+	Type    string
+	VdsID   string
+}
+
+// VLANCreateSpec 是 vlan.create 需要的参数。
+type VLANCreateSpec struct {
+	Name  string
+	VdsID string
+}
+
 // Cluster 是 CLI 内部用的集群视图。
 type Cluster struct {
 	ID               string

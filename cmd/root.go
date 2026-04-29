@@ -10,6 +10,8 @@ import (
 	hostcmd "github.com/6547709/goct/cmd/host"
 	clustercmd "github.com/6547709/goct/cmd/cluster"
 	dscmd "github.com/6547709/goct/cmd/datastore"
+	netcmd "github.com/6547709/goct/cmd/network"
+	vlancmd "github.com/6547709/goct/cmd/vlan"
 	"github.com/6547709/goct/pkg/client"
 	"github.com/6547709/goct/pkg/config"
 	"github.com/6547709/goct/pkg/flags"
@@ -76,7 +78,9 @@ func init() {
 	hostcmd.Register(rootCmd)
 	clustercmd.Register(rootCmd)
 	dscmd.Register(rootCmd)
-	// T11-T12 各资源挂载
+	netcmd.Register(rootCmd)
+	vlancmd.Register(rootCmd)
+	// T12 task/alert/user 挂载
 }
 
 // Execute 是 main.go 的唯一入口。

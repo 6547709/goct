@@ -40,6 +40,23 @@ var VMListColumns = []Column{
 	}},
 }
 
+// NetworkListColumns 是 network.ls 的表格列定义。
+var NetworkListColumns = []Column{
+	{Header: "ID", Get: func(v any) string { return v.(adapter.Network).ID }},
+	{Header: "NAME", Get: func(v any) string { return v.(adapter.Network).Name }},
+	{Header: "TYPE", Get: func(v any) string { return v.(adapter.Network).Type }},
+	{Header: "CLUSTER", Get: func(v any) string { return v.(adapter.Network).ClusterID }},
+}
+
+// VLANListColumns 是 vlan.ls 的表格列定义。
+var VLANListColumns = []Column{
+	{Header: "ID", Get: func(v any) string { return v.(adapter.VLAN).ID }},
+	{Header: "NAME", Get: func(v any) string { return v.(adapter.VLAN).Name }},
+	{Header: "VLAN TAG", Get: func(v any) string { return fmt.Sprintf("%d", v.(adapter.VLAN).VlanTag) }},
+	{Header: "TYPE", Get: func(v any) string { return v.(adapter.VLAN).Type }},
+	{Header: "VDS", Get: func(v any) string { return v.(adapter.VLAN).VdsID }},
+}
+
 // ClusterListColumns 是 cluster.ls 的表格列定义。
 var ClusterListColumns = []Column{
 	{Header: "ID", Get: func(v any) string { return v.(adapter.Cluster).ID }},
