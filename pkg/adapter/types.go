@@ -56,6 +56,43 @@ type ListOpts struct {
 	Skip         int32
 }
 
+// Task 是 CLI 内部用的任务视图。
+type Task struct {
+	ID           string
+	Description  string
+	Status       string
+	Progress     int
+	ErrorMessage string
+	CreatedAt    string
+}
+
+// Alert 是 CLI 内部用的告警视图。
+type Alert struct {
+	ID       string
+	Message  string
+	Severity string
+	Cause    string
+}
+
+// User 是 CLI 内部用的用户视图。
+type User struct {
+	ID       string
+	Name     string
+	Username string
+	Source   string
+	Role     string
+	Email    string
+}
+
+// UserCreateSpec 是 user.create 需要的参数。
+type UserCreateSpec struct {
+	Name     string
+	Username string
+	Password string
+	RoleID   string
+	Email    string
+}
+
 // Network 是 CLI 内部用的虚拟交换机（VDS）视图。
 type Network struct {
 	ID        string

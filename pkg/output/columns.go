@@ -40,6 +40,32 @@ var VMListColumns = []Column{
 	}},
 }
 
+// TaskListColumns 是 task.ls 的表格列定义。
+var TaskListColumns = []Column{
+	{Header: "ID", Get: func(v any) string { return v.(adapter.Task).ID }},
+	{Header: "STATUS", Get: func(v any) string { return v.(adapter.Task).Status }},
+	{Header: "PROGRESS", Get: func(v any) string { return fmt.Sprintf("%d%%", v.(adapter.Task).Progress) }},
+	{Header: "DESCRIPTION", Get: func(v any) string { return v.(adapter.Task).Description }},
+	{Header: "CREATED", Get: func(v any) string { return v.(adapter.Task).CreatedAt }},
+}
+
+// AlertListColumns 是 alert.ls 的表格列定义。
+var AlertListColumns = []Column{
+	{Header: "ID", Get: func(v any) string { return v.(adapter.Alert).ID }},
+	{Header: "SEVERITY", Get: func(v any) string { return v.(adapter.Alert).Severity }},
+	{Header: "MESSAGE", Get: func(v any) string { return v.(adapter.Alert).Message }},
+	{Header: "CAUSE", Get: func(v any) string { return v.(adapter.Alert).Cause }},
+}
+
+// UserListColumns 是 user.ls 的表格列定义。
+var UserListColumns = []Column{
+	{Header: "ID", Get: func(v any) string { return v.(adapter.User).ID }},
+	{Header: "NAME", Get: func(v any) string { return v.(adapter.User).Name }},
+	{Header: "USERNAME", Get: func(v any) string { return v.(adapter.User).Username }},
+	{Header: "ROLE", Get: func(v any) string { return v.(adapter.User).Role }},
+	{Header: "SOURCE", Get: func(v any) string { return v.(adapter.User).Source }},
+}
+
 // NetworkListColumns 是 network.ls 的表格列定义。
 var NetworkListColumns = []Column{
 	{Header: "ID", Get: func(v any) string { return v.(adapter.Network).ID }},
