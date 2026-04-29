@@ -40,6 +40,31 @@ var VMListColumns = []Column{
 	}},
 }
 
+// HostListColumns 是 host.ls 的表格列定义。
+var HostListColumns = []Column{
+	{Header: "ID", Get: func(v any) string { return v.(adapter.Host).ID }},
+	{Header: "NAME", Get: func(v any) string { return v.(adapter.Host).Name }},
+	{Header: "STATUS", Get: func(v any) string { return v.(adapter.Host).Status }},
+	{Header: "MGMT IP", Get: func(v any) string { return v.(adapter.Host).ManagementIP }},
+	{Header: "MEMORY", Get: func(v any) string { return HumanBytes(v.(adapter.Host).TotalMemoryBytes) }},
+	{Header: "VMs", Get: func(v any) string { return fmt.Sprintf("%d", v.(adapter.Host).RunningVMs) }},
+}
+
+// HostInfoRows 返回 Host 的 key-value 行。
+func HostInfoRows(h adapter.Host) [][]string {
+	return [][]string{
+		{"ID", h.ID},
+		{"Name", h.Name},
+		{"Status", h.Status},
+		{"Management IP", h.ManagementIP},
+		{"Data IP", h.DataIP},
+		{"CPU Model", h.CPUModel},
+		{"Total Memory", HumanBytes(h.TotalMemoryBytes)},
+		{"Running VMs", fmt.Sprintf("%d", h.RunningVMs)},
+		{"Cluster", h.ClusterID},
+	}
+}
+
 // SnapshotListColumns 是 vm.snapshot.ls 的表格列定义。
 var SnapshotListColumns = []Column{
 	{Header: "ID", Get: func(v any) string { return v.(adapter.Snapshot).ID }},

@@ -56,6 +56,19 @@ type ListOpts struct {
 	Skip         int32
 }
 
+// Host 是 CLI 内部用的主机视图。
+type Host struct {
+	ID              string
+	Name            string
+	Status          string
+	ManagementIP    string
+	DataIP          string
+	CPUModel        string
+	TotalMemoryBytes uint64
+	RunningVMs      int32
+	ClusterID       string
+}
+
 // Snapshot 是 CLI 内部用的快照视图。
 type Snapshot struct {
 	ID          string
