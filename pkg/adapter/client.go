@@ -26,9 +26,12 @@ var (
 	ErrUnsupported = errors.New("operation not supported by SDK")
 )
 
-// Client 是 adapter 的聚合接口；T7+ 资源任务通过内嵌 sub-interface 扩展。
+// Client 是 adapter 的聚合接口；各资源 sub-interface 通过内嵌扩展。
 type Client interface {
 	About(ctx context.Context) (TowerInfo, error)
+	VMOps
+	// GetTaskProgress 实现 task.Ops 接口，让 watcher 能轮询任务状态。
+	GetTaskProgress(ctx context.Context, id string) (percent int, status string, err error)
 }
 
 // Options 是 NewClient 入参。

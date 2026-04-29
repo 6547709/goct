@@ -26,6 +26,7 @@ type VM struct {
 	Name        string
 	Status      string // 例：RUNNING / STOPPED / SUSPENDED
 	ClusterID   string
+	HostName    string
 	VCPU        int32
 	MemoryBytes uint64
 	IPs         []string
@@ -53,6 +54,28 @@ type ListOpts struct {
 	ClusterID    string
 	Limit        int32
 	Skip         int32
+}
+
+// VMCreateSpec 是 vm.create 命令需要的参数集合。
+type VMCreateSpec struct {
+	Name        string
+	ClusterID   string
+	VCPU        int32
+	MemoryBytes int64  // bytes
+	Firmware    string // BIOS / UEFI, default BIOS
+	Description string
+}
+
+// VMCloneSpec 是 vm.clone 命令需要的参数集合。
+type VMCloneSpec struct {
+	Name            string
+	TargetClusterID string // 可选；空则同集群
+}
+
+// VMExportSpec 是 vm.export 命令的参数。
+type VMExportSpec struct {
+	FileType string // OVF (default)
+	KeepMAC  bool
 }
 
 // PowerAction 抽象 VM 电源操作动作。

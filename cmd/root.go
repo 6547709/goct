@@ -6,6 +6,7 @@ import (
 	"context"
 
 	"github.com/6547709/goct/cmd/system"
+	vmcmd "github.com/6547709/goct/cmd/vm"
 	"github.com/6547709/goct/pkg/client"
 	"github.com/6547709/goct/pkg/config"
 	"github.com/6547709/goct/pkg/flags"
@@ -68,7 +69,8 @@ func init() {
 	)
 
 	system.Register(rootCmd)
-	// T7-T12 各资源在自己的 register.go 中通过 init() 挂载到 rootCmd
+	vmcmd.Register(rootCmd)
+	// T8-T12 各资源在自己的 register.go 中挂载到 rootCmd
 }
 
 // Execute 是 main.go 的唯一入口。
