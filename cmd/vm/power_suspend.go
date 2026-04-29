@@ -10,11 +10,15 @@ import (
 
 func newPowerSuspend() *cobra.Command {
 	return &cobra.Command{
-		Use: "vm.power.suspend <name|id>", Short: "Suspend a VM", GroupID: groupID,
-		Args: cobra.ExactArgs(1),
+		Use: "vm.power.suspend [name|id]", Short: "Suspend a VM", GroupID: groupID,
+		Args: cobra.MaximumNArgs(1),
 		RunE: func(c *cobra.Command, args []string) error {
 			cli := client.From(c.Context())
-			ref, err := service.NewVM(cli).Power(c.Context(), args[0], adapter.PowerSuspend, false)
+			id, err := resolveVMArg(args)
+			if err != nil {
+				return err
+			}
+			ref, err := service.NewVM(cli).Power(c.Context(), id, adapter.PowerSuspend, false)
 			if err != nil {
 				return err
 			}

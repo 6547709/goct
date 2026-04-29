@@ -1,6 +1,8 @@
 package datastore
 
 import (
+	"fmt"
+
 	"github.com/6547709/goct/pkg/adapter"
 	"github.com/6547709/goct/pkg/client"
 	gflags "github.com/6547709/goct/pkg/flags"
@@ -11,6 +13,7 @@ import (
 
 func newLs() *cobra.Command {
 	var sf gflags.SearchFlags
+	var idOnly bool
 	c := &cobra.Command{
 		Use: "datastore.ls", Short: "List datastores", GroupID: groupID,
 		RunE: func(c *cobra.Command, _ []string) error {
@@ -18,6 +21,12 @@ func newLs() *cobra.Command {
 			items, err := service.NewDatastore(cli).List(c.Context(),
 				adapter.ListOpts{NameContains: sf.Name, Limit: sf.Limit})
 			if err != nil { return err }
+			if idOnly {
+				for _, it := range items {
+					_, _ = fmt.Fprintln(c.OutOrStdout(), it.ID)
+				}
+				return nil
+			}
 			out := make([]any, len(items))
 			for i := range items { out[i] = items[i] }
 			format, _ := c.Flags().GetString("format")
@@ -25,5 +34,6 @@ func newLs() *cobra.Command {
 		},
 	}
 	sf.Register(c)
+	c.Flags().BoolVar(&idOnly, "id-only", false, "Output only IDs, one per line (for scripting)")
 	return c
 }

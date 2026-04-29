@@ -10,11 +10,15 @@ import (
 func newReboot() *cobra.Command {
 	var force bool
 	c := &cobra.Command{
-		Use: "host.reboot <name|id>", Short: "Reboot a host", GroupID: groupID,
-		Args: cobra.ExactArgs(1),
+		Use: "host.reboot [name|id]", Short: "Reboot a host", GroupID: groupID,
+		Args: cobra.MaximumNArgs(1),
 		RunE: func(c *cobra.Command, args []string) error {
 			cli := client.From(c.Context())
-			ref, err := service.NewHost(cli).Reboot(c.Context(), args[0], force)
+			id, err := resolveHostArg(args)
+			if err != nil {
+				return err
+			}
+			ref, err := service.NewHost(cli).Reboot(c.Context(), id, force)
 			if err != nil {
 				return err
 			}

@@ -13,11 +13,15 @@ import (
 func newClone() *cobra.Command {
 	var name, clusterID string
 	c := &cobra.Command{
-		Use: "vm.clone <source-name|id>", Short: "Clone a VM", GroupID: groupID,
-		Args: cobra.ExactArgs(1),
+		Use: "vm.clone [source-name|id]", Short: "Clone a VM", GroupID: groupID,
+		Args: cobra.MaximumNArgs(1),
 		RunE: func(c *cobra.Command, args []string) error {
 			cli := client.From(c.Context())
-			ref, err := service.NewVM(cli).Clone(c.Context(), args[0], adapter.VMCloneSpec{
+			id, err := resolveVMArg(args)
+			if err != nil {
+				return err
+			}
+			ref, err := service.NewVM(cli).Clone(c.Context(), id, adapter.VMCloneSpec{
 				Name:            name,
 				TargetClusterID: clusterID,
 			})

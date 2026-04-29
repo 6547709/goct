@@ -9,11 +9,15 @@ import (
 
 func newMaintenanceExit() *cobra.Command {
 	return &cobra.Command{
-		Use: "host.maintenance.exit <name|id>", Short: "Exit maintenance mode", GroupID: groupID,
-		Args: cobra.ExactArgs(1),
+		Use: "host.maintenance.exit [name|id]", Short: "Exit maintenance mode", GroupID: groupID,
+		Args: cobra.MaximumNArgs(1),
 		RunE: func(c *cobra.Command, args []string) error {
 			cli := client.From(c.Context())
-			ref, err := service.NewHost(cli).ExitMaintenance(c.Context(), args[0])
+			id, err := resolveHostArg(args)
+			if err != nil {
+				return err
+			}
+			ref, err := service.NewHost(cli).ExitMaintenance(c.Context(), id)
 			if err != nil {
 				return err
 			}

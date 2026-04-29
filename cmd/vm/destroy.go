@@ -12,11 +12,15 @@ import (
 func newDestroy() *cobra.Command {
 	var force bool
 	c := &cobra.Command{
-		Use: "vm.destroy <name|id>", Short: "Destroy (delete) a VM", GroupID: groupID,
-		Args: cobra.ExactArgs(1),
+		Use: "vm.destroy [name|id]", Short: "Destroy (delete) a VM", GroupID: groupID,
+		Args: cobra.MaximumNArgs(1),
 		RunE: func(c *cobra.Command, args []string) error {
 			cli := client.From(c.Context())
-			ref, err := service.NewVM(cli).Destroy(c.Context(), args[0], force)
+			id, err := resolveVMArg(args)
+			if err != nil {
+				return err
+			}
+			ref, err := service.NewVM(cli).Destroy(c.Context(), id, force)
 			if err != nil {
 				return err
 			}

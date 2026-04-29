@@ -10,11 +10,15 @@ import (
 func newShutdown() *cobra.Command {
 	var force bool
 	c := &cobra.Command{
-		Use: "host.shutdown <name|id>", Short: "Shut down a host", GroupID: groupID,
-		Args: cobra.ExactArgs(1),
+		Use: "host.shutdown [name|id]", Short: "Shut down a host", GroupID: groupID,
+		Args: cobra.MaximumNArgs(1),
 		RunE: func(c *cobra.Command, args []string) error {
 			cli := client.From(c.Context())
-			ref, err := service.NewHost(cli).Shutdown(c.Context(), args[0], force)
+			id, err := resolveHostArg(args)
+			if err != nil {
+				return err
+			}
+			ref, err := service.NewHost(cli).Shutdown(c.Context(), id, force)
 			if err != nil {
 				return err
 			}

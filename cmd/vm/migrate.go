@@ -12,11 +12,15 @@ import (
 func newMigrate() *cobra.Command {
 	var hostID string
 	c := &cobra.Command{
-		Use: "vm.migrate <name|id>", Short: "Migrate a VM to another host", GroupID: groupID,
-		Args: cobra.ExactArgs(1),
+		Use: "vm.migrate [name|id]", Short: "Migrate a VM to another host", GroupID: groupID,
+		Args: cobra.MaximumNArgs(1),
 		RunE: func(c *cobra.Command, args []string) error {
 			cli := client.From(c.Context())
-			ref, err := service.NewVM(cli).Migrate(c.Context(), args[0], hostID)
+			id, err := resolveVMArg(args)
+			if err != nil {
+				return err
+			}
+			ref, err := service.NewVM(cli).Migrate(c.Context(), id, hostID)
 			if err != nil {
 				return err
 			}

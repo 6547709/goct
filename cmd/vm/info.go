@@ -11,11 +11,15 @@ import (
 
 func newInfo() *cobra.Command {
 	return &cobra.Command{
-		Use: "vm.info <name|id>", Short: "Show VM details", GroupID: groupID,
-		Args: cobra.ExactArgs(1),
+		Use: "vm.info [name|id]", Short: "Show VM details", GroupID: groupID,
+		Args: cobra.MaximumNArgs(1),
 		RunE: func(c *cobra.Command, args []string) error {
 			cli := client.From(c.Context())
-			v, err := service.NewVM(cli).Resolve(c.Context(), args[0])
+			id, err := resolveVMArg(args)
+			if err != nil {
+				return err
+			}
+			v, err := service.NewVM(cli).Resolve(c.Context(), id)
 			if err != nil {
 				return err
 			}

@@ -12,11 +12,15 @@ import (
 func newSnapshotCreate() *cobra.Command {
 	var name string
 	c := &cobra.Command{
-		Use: "vm.snapshot.create <vm-name|id>", Short: "Create a snapshot", GroupID: groupID,
-		Args: cobra.ExactArgs(1),
+		Use: "vm.snapshot.create [vm-name|id]", Short: "Create a snapshot", GroupID: groupID,
+		Args: cobra.MaximumNArgs(1),
 		RunE: func(c *cobra.Command, args []string) error {
 			cli := client.From(c.Context())
-			ref, err := service.NewSnapshot(cli).Create(c.Context(), args[0], name)
+			id, err := resolveVMArg(args)
+			if err != nil {
+				return err
+			}
+			ref, err := service.NewSnapshot(cli).Create(c.Context(), id, name)
 			if err != nil {
 				return err
 			}

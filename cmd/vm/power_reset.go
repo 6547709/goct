@@ -11,11 +11,15 @@ import (
 func newPowerReset() *cobra.Command {
 	var force bool
 	c := &cobra.Command{
-		Use: "vm.power.reset <name|id>", Short: "Restart / force reset a VM", GroupID: groupID,
-		Args: cobra.ExactArgs(1),
+		Use: "vm.power.reset [name|id]", Short: "Restart / force reset a VM", GroupID: groupID,
+		Args: cobra.MaximumNArgs(1),
 		RunE: func(c *cobra.Command, args []string) error {
 			cli := client.From(c.Context())
-			ref, err := service.NewVM(cli).Power(c.Context(), args[0], adapter.PowerReset, force)
+			id, err := resolveVMArg(args)
+			if err != nil {
+				return err
+			}
+			ref, err := service.NewVM(cli).Power(c.Context(), id, adapter.PowerReset, force)
 			if err != nil {
 				return err
 			}
