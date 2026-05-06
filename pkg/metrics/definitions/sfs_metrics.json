@@ -1,0 +1,414 @@
+{
+  "sfs_metrics": [
+    {
+      "name": "client_requests_total",
+      "description": "客户端请求总数",
+      "version": "v1.0.0 及以上"
+    },
+    {
+      "name": "last_client_update",
+      "description": "客户端最后更新时间",
+      "version": "v1.0.0 及以上"
+    },
+    {
+      "name": "nfs_bytes_received_by_export_total",
+      "description": "按导出分类的 NFS 接收总字节数",
+      "version": "v1.0.0 及以上"
+    },
+    {
+      "name": "nfs_bytes_received_total",
+      "description": "NFS 接收的总字节数",
+      "version": "v1.0.0 及以上"
+    },
+    {
+      "name": "nfs_bytes_sent_by_export_total",
+      "description": "按导出分类的 NFS 发送总字节数",
+      "version": "v1.0.0 及以上"
+    },
+    {
+      "name": "nfs_bytes_sent_total",
+      "description": "NFS 发送的总字节数",
+      "version": "v1.0.0 及以上"
+    },
+    {
+      "name": "nfs_errors_total",
+      "description": "NFS 错误总数",
+      "version": "v1.0.0 及以上"
+    },
+    {
+      "name": "nfs_latency_ms",
+      "description": "NFS 请求延迟（毫秒）",
+      "version": "v1.0.0 及以上"
+    },
+    {
+      "name": "nfs_latency_ms_by_export",
+      "description": "按导出分类的 NFS 请求延迟（毫秒）",
+      "version": "v1.0.0 及以上"
+    },
+    {
+      "name": "nfs_request_size_by_export_bytes",
+      "description": "按导出分类的 NFS 请求大小（字节）",
+      "version": "v1.0.0 及以上"
+    },
+    {
+      "name": "nfs_request_size_bytes",
+      "description": "NFS 请求大小（字节）",
+      "version": "v1.0.0 及以上"
+    },
+    {
+      "name": "nfs_requests_by_export_total",
+      "description": "按导出分类的 NFS 请求总数",
+      "version": "v1.0.0 及以上"
+    },
+    {
+      "name": "nfs_requests_total",
+      "description": "NFS 请求总数",
+      "version": "v1.0.0 及以上"
+    },
+    {
+      "name": "nfs_response_size_by_export_bytes",
+      "description": "按导出分类的 NFS 响应大小（字节）",
+      "version": "v1.0.0 及以上"
+    },
+    {
+      "name": "nfs_response_size_bytes",
+      "description": "NFS 响应大小（字节）",
+      "version": "v1.0.0 及以上"
+    },
+    {
+      "name": "rpcs_completed_total",
+      "description": "已完成的 RPC 总数",
+      "version": "v1.0.0 及以上"
+    },
+    {
+      "name": "rpcs_in_flight",
+      "description": "正在处理的 RPC 数",
+      "version": "v1.0.0 及以上"
+    },
+    {
+      "name": "rpcs_received_total",
+      "description": "接收的 RPC 总数",
+      "version": "v1.0.0 及以上"
+    },
+    {
+      "name": "request_concurrency",
+      "description": "正在处理的并发请求数",
+      "version": "v1.0.0–v1.1.2"
+    },
+    {
+      "name": "request_latency_ms",
+      "description": "请求延迟（毫秒）",
+      "version": "v1.0.0–v1.1.2"
+    },
+    {
+      "name": "request_latency_ns",
+      "description": "请求延迟（纳秒）",
+      "version": "v1.0.0–v1.1.2"
+    },
+    {
+      "name": "request_size_bytes",
+      "description": "请求大小（字节）",
+      "version": "v1.0.0–v1.1.2"
+    },
+    {
+      "name": "sfs_active_stats",
+      "description": "应用程序分配的活跃页面总字节数",
+      "version": "v1.3.0 及以上"
+    },
+    {
+      "name": "sfs_allocated_stats",
+      "description": "应用程序分配的总字节数",
+      "version": "v1.3.0 及以上"
+    },
+    {
+      "name": "sfs_buffer_pool_count",
+      "description": "缓冲池数量",
+      "version": "v1.3.0 及以上"
+    },
+    {
+      "name": "sfs_buffer_pool_mbytes",
+      "description": "缓冲池大小（MB）",
+      "version": "v1.3.0 及以上"
+    },
+    {
+      "name": "sfs_dirty_stats",
+      "description": "非活跃且非元数据的物理内存总字节数",
+      "version": "v1.3.0 及以上"
+    },
+    {
+      "name": "sfs_extent_avail_stats",
+      "description": "竞技场中已分配但未使用的区段结构数量",
+      "version": "v1.3.0 及以上"
+    },
+    {
+      "name": "sfs_fragmentation_ratio",
+      "description": "小 bin 浪费内存占总分配内存的比例",
+      "version": "v1.3.0 及以上"
+    },
+    {
+      "name": "sfs_internal_fragmentation_stats",
+      "description": "活跃空间与分配空间之间浪费的虚拟内存总字节数",
+      "version": "v1.3.0 及以上"
+    },
+    {
+      "name": "sfs_large_allocated_stats",
+      "description": "大对象（>16KB）当前分配的字节数",
+      "version": "v1.3.0 及以上"
+    },
+    {
+      "name": "sfs_mapped_stats",
+      "description": "分配器映射的活跃区段总字节数",
+      "version": "v1.3.0 及以上"
+    },
+    {
+      "name": "sfs_metadata_stats",
+      "description": "jemalloc 元数据占用的总字节数",
+      "version": "v1.3.0 及以上"
+    },
+    {
+      "name": "sfs_muzzy_stats",
+      "description": "标记为 MADV_FREE 的内存总字节数",
+      "version": "v1.3.0 及以上"
+    },
+    {
+      "name": "sfs_prefetch_dir_failure_count",
+      "description": "目录预取失败计数",
+      "version": "v1.3.0 及以上"
+    },
+    {
+      "name": "sfs_prefetch_dir_size",
+      "description": "预取目录大小",
+      "version": "v1.3.0 及以上"
+    },
+    {
+      "name": "sfs_prefetch_file_failure_count",
+      "description": "文件预取失败计数",
+      "version": "v1.3.0 及以上"
+    },
+    {
+      "name": "sfs_prefetch_file_size_kbytes",
+      "description": "预取文件大小（KB）",
+      "version": "v1.3.0 及以上"
+    },
+    {
+      "name": "sfs_prefetch_flow_control_duration",
+      "description": "预取流控耗时",
+      "version": "v1.3.0 及以上"
+    },
+    {
+      "name": "sfs_prefetch_flow_control_inflight_count",
+      "description": "预取流控正在处理的请求数",
+      "version": "v1.3.0 及以上"
+    },
+    {
+      "name": "sfs_process_cpu_seconds_total",
+      "description": "用户和系统 CPU 总耗时（秒）",
+      "version": "v1.3.0 及以上"
+    },
+    {
+      "name": "sfs_process_max_fds",
+      "description": "最大文件描述符数量",
+      "version": "v1.3.0 及以上"
+    },
+    {
+      "name": "sfs_process_open_fds",
+      "description": "打开的文件描述符数量",
+      "version": "v1.3.0 及以上"
+    },
+    {
+      "name": "sfs_process_resident_memory_bytes",
+      "description": "进程常驻内存大小（字节）",
+      "version": "v1.3.0 及以上"
+    },
+    {
+      "name": "sfs_process_start_time_seconds",
+      "description": "进程启动时间（Unix 纪元秒）",
+      "version": "v1.3.0 及以上"
+    },
+    {
+      "name": "sfs_process_threads",
+      "description": "进程中的操作系统线程数",
+      "version": "v1.3.0 及以上"
+    },
+    {
+      "name": "sfs_process_virtual_memory_bytes",
+      "description": "进程虚拟内存大小（字节）",
+      "version": "v1.3.0 及以上"
+    },
+    {
+      "name": "sfs_process_virtual_memory_mapping_size",
+      "description": "进程虚拟内存映射大小",
+      "version": "v1.3.0 及以上"
+    },
+    {
+      "name": "sfs_read_full_count",
+      "description": "完整读取计数",
+      "version": "v1.3.0 及以上"
+    },
+    {
+      "name": "sfs_read_hit_count",
+      "description": "读取缓存命中计数",
+      "version": "v1.3.0 及以上"
+    },
+    {
+      "name": "sfs_read_interference_count",
+      "description": "读取干扰计数",
+      "version": "v1.3.0 及以上"
+    },
+    {
+      "name": "sfs_read_miss_count",
+      "description": "读取缓存未命中计数",
+      "version": "v1.3.0 及以上"
+    },
+    {
+      "name": "sfs_resident_stats",
+      "description": "物理常驻数据页面的总字节数",
+      "version": "v1.3.0 及以上"
+    },
+    {
+      "name": "sfs_retained_stats",
+      "description": "保留的虚拟内存映射总字节数",
+      "version": "v1.3.0 及以上"
+    },
+    {
+      "name": "sfs_rpc_inflight_count",
+      "description": "RPC 正在处理的请求数",
+      "version": "v1.2.0 及以上"
+    },
+    {
+      "name": "sfs_rpc_request_size_bytes",
+      "description": "RPC 请求大小（字节）",
+      "version": "v1.2.0 及以上"
+    },
+    {
+      "name": "sfs_rpc_requests_count",
+      "description": "RPC 请求计数",
+      "version": "v1.2.0 及以上"
+    },
+    {
+      "name": "sfs_rpc_response_duration",
+      "description": "RPC 响应耗时",
+      "version": "v1.2.0 及以上"
+    },
+    {
+      "name": "sfs_rss_ratio",
+      "description": "常驻集大小占分配内存的百分比",
+      "version": "v1.3.0 及以上"
+    },
+    {
+      "name": "sfs_small_allocated_stats",
+      "description": "小对象（<=16KB）当前分配的字节数",
+      "version": "v1.3.0 及以上"
+    },
+    {
+      "name": "sfs_table_cache_dir_count",
+      "description": "表缓存目录数量",
+      "version": "v1.3.0 及以上"
+    },
+    {
+      "name": "sfs_table_cache_file_count",
+      "description": "表缓存文件数量",
+      "version": "v1.3.0 及以上"
+    },
+    {
+      "name": "sfs_commit_handle_duration",
+      "description": "提交处理耗时",
+      "version": "v1.3.0 及以上"
+    },
+    {
+      "name": "sfs_commit_vec_size",
+      "description": "提交向量大小",
+      "version": "v1.3.0 及以上"
+    },
+    {
+      "name": "sfs_journal_apply_tx_duration",
+      "description": "日志应用事务耗时",
+      "version": "v1.3.0 及以上"
+    },
+    {
+      "name": "sfs_journal_super_block_duration",
+      "description": "日志超级块耗时",
+      "version": "v1.3.0 及以上"
+    },
+    {
+      "name": "sfs_journal_write_log_duration",
+      "description": "日志写入耗时",
+      "version": "v1.3.0 及以上"
+    },
+    {
+      "name": "sfs_revoke_delegation_duration",
+      "description": "委托撤销耗时",
+      "version": "v1.3.0 及以上"
+    },
+    {
+      "name": "sfs_revoke_failure_count",
+      "description": "撤销失败计数",
+      "version": "v1.3.0 及以上"
+    },
+    {
+      "name": "sfs_revoke_inflight_count",
+      "description": "正在处理的撤销请求数",
+      "version": "v1.3.0 及以上"
+    },
+    {
+      "name": "sfs_tx_handle_duration",
+      "description": "事务处理耗时",
+      "version": "v1.3.0 及以上"
+    },
+    {
+      "name": "sfs_txs_inflight_count",
+      "description": "正在处理的事务数",
+      "version": "v1.3.0 及以上"
+    },
+    {
+      "name": "sfs_uzfs_read_delays",
+      "description": "uZFS 读取延迟（纳秒）",
+      "version": "v1.2.0 及以上"
+    },
+    {
+      "name": "sfs_uzfs_request_concurrency",
+      "description": "uZFS 正在处理的并发请求数",
+      "version": "v1.2.0 及以上"
+    },
+    {
+      "name": "sfs_uzfs_request_latency_ns",
+      "description": "uZFS 请求延迟（纳秒）",
+      "version": "v1.2.0 及以上"
+    },
+    {
+      "name": "sfs_uzfs_txg_delays",
+      "description": "uZFS TXG 延迟（纳秒）",
+      "version": "v1.2.0 及以上"
+    },
+    {
+      "name": "sfs_uzfs_write_delays",
+      "description": "uZFS 写入延迟（纳秒）",
+      "version": "v1.2.0 及以上"
+    },
+    {
+      "name": "uzfs_request_concurrency",
+      "description": "uZFS 正在处理的并发请求数",
+      "version": "v1.0.0–v1.1.2"
+    },
+    {
+      "name": "uzfs_request_latency_ns",
+      "description": "uZFS 请求延迟（纳秒）",
+      "version": "v1.0.0–v1.1.2"
+    },
+    {
+      "name": "sfs_hdfs_rpc_inflight_count",
+      "description": "HDFS RPC 正在处理的请求数",
+      "version": "v1.3.0 及以上"
+    },
+    {
+      "name": "sfs_hdfs_rpc_request_size_bytes",
+      "description": "HDFS RPC 请求大小（字节）",
+      "version": "v1.3.0 及以上"
+    },
+    {
+      "name": "sfs_hdfs_rpc_response_duration",
+      "description": "HDFS RPC 响应耗时",
+      "version": "v1.3.0 及以上"
+    }
+  ]
+}

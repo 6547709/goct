@@ -1,0 +1,484 @@
+{
+  "host_metrics": [
+    {
+      "name": "host_access_network_can_ping",
+      "description": "主机接入网络能否 ping 通",
+      "version": ""
+    },
+    {
+      "name": "host_all_service_resident_memory_bytes",
+      "description": "主机所有服务常驻内存占用量",
+      "version": ""
+    },
+    {
+      "name": "host_bond_slave_is_normal",
+      "description": "网口 bonding 状态",
+      "version": ""
+    },
+    {
+      "name": "host_can_connect_with_ntp_server",
+      "description": "主机与外部 NTP 服务器链接状态",
+      "version": ""
+    },
+    {
+      "name": "host_can_sync_time_with_ntp_server",
+      "description": "主机时间与外部 NTP 服务器同步状态",
+      "version": ""
+    },
+    {
+      "name": "host_cpu_fan_is_ok",
+      "description": "主机风扇状态是否正常",
+      "version": ""
+    },
+    {
+      "name": "host_cpu_overall_15m_avg_load",
+      "description": "主机 CPU 15 分钟内的平均负载",
+      "version": ""
+    },
+    {
+      "name": "host_cpu_overall_1m_avg_load",
+      "description": "主机 CPU 1 分钟内的平均负载",
+      "version": ""
+    },
+    {
+      "name": "host_cpu_overall_5m_avg_load",
+      "description": "主机 CPU 5 分钟内的平均负载",
+      "version": ""
+    },
+    {
+      "name": "host_cpu_overall_usage_percent",
+      "description": "主机 CPU 使用率",
+      "version": ""
+    },
+    {
+      "name": "host_cpu_overall_used_hz",
+      "description": "主机 CPU 使用量",
+      "version": ""
+    },
+    {
+      "name": "host_cpu_temperature_celsius",
+      "description": "主机 CPU 温度",
+      "version": ""
+    },
+    {
+      "name": "host_disk_avg_read_latency_ns",
+      "description": "主机磁盘 I/O 平均延时-读",
+      "version": ""
+    },
+    {
+      "name": "host_disk_avg_read_size_bytes",
+      "description": "主机磁盘 I/O 平均块大小-读",
+      "version": ""
+    },
+    {
+      "name": "host_disk_avg_readwrite_latency_ns",
+      "description": "主机磁盘 I/O 平均延时-总",
+      "version": ""
+    },
+    {
+      "name": "host_disk_avg_readwrite_queue_length",
+      "description": "主机磁盘 I/O 等待队列长度",
+      "version": ""
+    },
+    {
+      "name": "host_disk_avg_readwrite_size_bytes",
+      "description": "主机磁盘 I/O 平均块大小-总",
+      "version": ""
+    },
+    {
+      "name": "host_disk_avg_write_latency_ns",
+      "description": "主机磁盘 I/O 平均延时-写",
+      "version": ""
+    },
+    {
+      "name": "host_disk_avg_write_size_bytes",
+      "description": "主机磁盘 I/O 平均块大小-写",
+      "version": ""
+    },
+    {
+      "name": "host_disk_read_iops",
+      "description": "主机磁盘读 IOPS",
+      "version": ""
+    },
+    {
+      "name": "host_disk_read_speed_bps",
+      "description": "主机磁盘 I/O 带宽-读",
+      "version": ""
+    },
+    {
+      "name": "host_disk_readwrite_iops",
+      "description": "主机磁盘总 IOPS",
+      "version": ""
+    },
+    {
+      "name": "host_disk_readwrite_speed_bps",
+      "description": "主机磁盘 I/O 带宽-总",
+      "version": ""
+    },
+    {
+      "name": "host_disk_remaining_life_percent",
+      "description": "磁盘剩余寿命百分比",
+      "version": ""
+    },
+    {
+      "name": "host_disk_smart_test_failed",
+      "description": "磁盘 S.M.A.R.T. 检测是否正常",
+      "version": ""
+    },
+    {
+      "name": "host_disk_temperature_celsius",
+      "description": "磁盘摄氏温度",
+      "version": ""
+    },
+    {
+      "name": "host_disk_utilization_percent",
+      "description": "主机磁盘活动时间百分比",
+      "version": ""
+    },
+    {
+      "name": "host_disk_write_iops",
+      "description": "主机磁盘写 IOPS",
+      "version": ""
+    },
+    {
+      "name": "host_disk_write_speed_bps",
+      "description": "主机磁盘 I/O 带宽-写",
+      "version": ""
+    },
+    {
+      "name": "host_hardware_raid_pd_lifespan",
+      "description": "硬件 RAID 下的物理盘剩余寿命百分比",
+      "version": ""
+    },
+    {
+      "name": "host_hardware_raid_pd_smart_error",
+      "description": "硬件 RAID 下的物理盘 S.M.A.R.T. 自测结果异常",
+      "version": ""
+    },
+    {
+      "name": "host_hardware_raid_vd_num_of_pd",
+      "description": "硬件 RAID 组中的物理盘数量",
+      "version": ""
+    },
+    {
+      "name": "host_hardware_raid_vd_status_error",
+      "description": "硬件 RAID 下的虚拟盘状态是否异常",
+      "version": ""
+    },
+    {
+      "name": "host_hdd_overall_size_bytes",
+      "description": "主机 HDD 磁盘总容量",
+      "version": ""
+    },
+    {
+      "name": "host_hp_memory_usage_percent",
+      "description": "主机大页内存使用百分比",
+      "version": ""
+    },
+    {
+      "name": "host_hp_memory_used_bytes",
+      "description": "主机大页内存使用量",
+      "version": ""
+    },
+    {
+      "name": "host_io_block_disk_offline",
+      "description": "物理盘发生 IO 阻塞，已停止处理 IO",
+      "version": ""
+    },
+    {
+      "name": "host_management_network_can_ping",
+      "description": "主机管理网络能否 ping 通",
+      "version": ""
+    },
+    {
+      "name": "host_memory_swap_in_speed_bps",
+      "description": "主机内存换入速度",
+      "version": ""
+    },
+    {
+      "name": "host_memory_swap_out_speed_bps",
+      "description": "主机内存换出速度",
+      "version": ""
+    },
+    {
+      "name": "host_memory_swap_size_bytes",
+      "description": "主机交换内存总量",
+      "version": ""
+    },
+    {
+      "name": "host_memory_swap_usage_percent",
+      "description": "主机交换内存使用百分比",
+      "version": ""
+    },
+    {
+      "name": "host_memory_swap_used_bytes",
+      "description": "主机交换内存使用量",
+      "version": ""
+    },
+    {
+      "name": "host_memory_usage_percent",
+      "description": "主机内存使用率",
+      "version": ""
+    },
+    {
+      "name": "host_memory_used_bytes",
+      "description": "主机内存使用量",
+      "version": ""
+    },
+    {
+      "name": "host_mongo_dir_used_space_bytes",
+      "description": "主机 /var/log/mongodb/ 目录已用量",
+      "version": ""
+    },
+    {
+      "name": "host_network_loss_rate",
+      "description": "主机网口丢包率",
+      "version": ""
+    },
+    {
+      "name": "host_network_nic_bandwidth_usage_percent",
+      "description": "主机网口带宽使用率百分比",
+      "version": ""
+    },
+    {
+      "name": "host_network_ping_packet_loss_percent",
+      "description": "主机之间 ping 丢包率",
+      "version": ""
+    },
+    {
+      "name": "host_network_ping_time_ns",
+      "description": "主机之间 ping 延迟",
+      "version": ""
+    },
+    {
+      "name": "host_network_rdma_receive_bytes",
+      "description": "主机 RDMA 网络接收字节数",
+      "version": ""
+    },
+    {
+      "name": "host_network_rdma_receive_packets",
+      "description": "主机 RDMA 网络接收包数",
+      "version": ""
+    },
+    {
+      "name": "host_network_rdma_receive_speed_bitps",
+      "description": "主机 RDMA 网络接收速度（比特每秒）",
+      "version": ""
+    },
+    {
+      "name": "host_network_rdma_transmit_bytes",
+      "description": "主机 RDMA 网络发送字节数",
+      "version": ""
+    },
+    {
+      "name": "host_network_rdma_transmit_packets",
+      "description": "主机 RDMA 网络发送包数",
+      "version": ""
+    },
+    {
+      "name": "host_network_rdma_transmit_speed_bitps",
+      "description": "主机 RDMA 网络发送速度（比特每秒）",
+      "version": ""
+    },
+    {
+      "name": "host_network_receive_bytes",
+      "description": "主机网口数据接收总量",
+      "version": ""
+    },
+    {
+      "name": "host_network_receive_dropped_packets",
+      "description": "主机网口接收数据丢包总数",
+      "version": ""
+    },
+    {
+      "name": "host_network_receive_errors",
+      "description": "主机网口接收的错误数据包数",
+      "version": ""
+    },
+    {
+      "name": "host_network_receive_fifo_errors",
+      "description": "主机网口接收 FIFO 错误总数",
+      "version": ""
+    },
+    {
+      "name": "host_network_receive_packets",
+      "description": "主机网口收包量",
+      "version": ""
+    },
+    {
+      "name": "host_network_receive_speed_bitps",
+      "description": "主机网口数据接收速度（比特每秒）",
+      "version": ""
+    },
+    {
+      "name": "host_network_receive_speed_bps",
+      "description": "主机网口数据接收速度（字节每秒）",
+      "version": ""
+    },
+    {
+      "name": "host_network_transmit_bytes",
+      "description": "主机网口数据发送总量",
+      "version": ""
+    },
+    {
+      "name": "host_network_transmit_dropped_packets",
+      "description": "主机网口发送数据丢包总数",
+      "version": ""
+    },
+    {
+      "name": "host_network_transmit_errors",
+      "description": "主机网口发送的错误数据包数",
+      "version": ""
+    },
+    {
+      "name": "host_network_transmit_fifo_errors",
+      "description": "主机网口发送 FIFO 错误总数",
+      "version": ""
+    },
+    {
+      "name": "host_network_transmit_packets",
+      "description": "主机网口发包量",
+      "version": ""
+    },
+    {
+      "name": "host_network_transmit_speed_bitps",
+      "description": "主机网口数据发送速度（比特每秒）",
+      "version": ""
+    },
+    {
+      "name": "host_network_transmit_speed_bps",
+      "description": "主机网口数据发送速度（字节每秒）",
+      "version": ""
+    },
+    {
+      "name": "host_non_hp_memory_usage_percent",
+      "description": "主机非大页内存使用百分比",
+      "version": ""
+    },
+    {
+      "name": "host_non_hp_memory_used_bytes",
+      "description": "主机非大页内存使用量",
+      "version": ""
+    },
+    {
+      "name": "host_other_service_resident_memory_bytes",
+      "description": "主机其他服务常驻内存占用量",
+      "version": ""
+    },
+    {
+      "name": "host_power_is_on",
+      "description": "主机电源状态",
+      "version": ""
+    },
+    {
+      "name": "host_service_cpu_usage_percent",
+      "description": "主机服务 CPU 占用百分比",
+      "version": ""
+    },
+    {
+      "name": "host_service_health",
+      "description": "主机服务健康状态",
+      "version": ""
+    },
+    {
+      "name": "host_service_is_running",
+      "description": "主机服务运行状态",
+      "version": ""
+    },
+    {
+      "name": "host_service_resident_memory_bytes",
+      "description": "主机服务常驻内存占用量",
+      "version": ""
+    },
+    {
+      "name": "host_service_shared_memory_bytes",
+      "description": "主机服务共享内存占用量",
+      "version": ""
+    },
+    {
+      "name": "host_service_virtual_memory_bytes",
+      "description": "主机服务虚拟内存占用量",
+      "version": ""
+    },
+    {
+      "name": "host_ssd_overall_size_bytes",
+      "description": "主机 SSD 磁盘总容量",
+      "version": ""
+    },
+    {
+      "name": "host_storage_network_can_ping",
+      "description": "主机存储网络能否 ping 通",
+      "version": ""
+    },
+    {
+      "name": "host_sub_healthy_disk_in_isolate",
+      "description": "磁盘是否处于亚健康状态且隔离中",
+      "version": ""
+    },
+    {
+      "name": "host_sub_healthy_disk_without_isolate",
+      "description": "磁盘是否处于亚健康状态且未隔离",
+      "version": ""
+    },
+    {
+      "name": "host_sys_partition_raid_is_normal",
+      "description": "主机 RAID 状态",
+      "version": ""
+    },
+    {
+      "name": "host_sys_partition_usage_percent",
+      "description": "主机系统分区已使用百分比",
+      "version": ""
+    },
+    {
+      "name": "host_sys_partition_used_space_bytes",
+      "description": "主机 / 目录已用量",
+      "version": ""
+    },
+    {
+      "name": "host_time_offset_with_ntp_leader_seconds",
+      "description": "主机与 NTP Leader 的时钟偏移量，单位 秒",
+      "version": ""
+    },
+    {
+      "name": "host_to_host_max_ping_time_ns_bucket",
+      "description": "主机之间 ping 延迟分布",
+      "version": ""
+    },
+    {
+      "name": "host_unhealthy_disk_in_isolate",
+      "description": "磁盘是否处于不健康状态",
+      "version": ""
+    },
+    {
+      "name": "host_unhealthy_disk_offline",
+      "description": "不健康磁盘是否离线",
+      "version": ""
+    },
+    {
+      "name": "host_unhealthy_disk_with_last_smtx_system",
+      "description": "磁盘是否处于不健康状态，且残留最后一个系统分区或元数据分区",
+      "version": ""
+    },
+    {
+      "name": "host_unhealthy_disk_with_left_partition",
+      "description": "磁盘是否处于不健康状态且残留未卸载分区",
+      "version": ""
+    },
+    {
+      "name": "host_uptime_seconds",
+      "description": "集群 SSD 磁盘总容量",
+      "version": ""
+    },
+    {
+      "name": "host_work_status_is_unknown",
+      "description": "主机工作状态是否未知",
+      "version": ""
+    },
+    {
+      "name": "host_zbs_log_dir_used_space_bytes",
+      "description": "主机 /var/log/zbs/ 目录已用量",
+      "version": ""
+    }
+  ]
+}
