@@ -5,16 +5,17 @@ package cmd
 import (
 	"context"
 
+	"github.com/6547709/goct/cmd/alert"
+	"github.com/6547709/goct/cmd/cluster"
+	"github.com/6547709/goct/cmd/datastore"
+	"github.com/6547709/goct/cmd/host"
+	"github.com/6547709/goct/cmd/metrics"
+	"github.com/6547709/goct/cmd/network"
 	"github.com/6547709/goct/cmd/system"
+	"github.com/6547709/goct/cmd/task"
+	"github.com/6547709/goct/cmd/user"
+	"github.com/6547709/goct/cmd/vlan"
 	vmcmd "github.com/6547709/goct/cmd/vm"
-	hostcmd "github.com/6547709/goct/cmd/host"
-	clustercmd "github.com/6547709/goct/cmd/cluster"
-	dscmd "github.com/6547709/goct/cmd/datastore"
-	netcmd "github.com/6547709/goct/cmd/network"
-	vlancmd "github.com/6547709/goct/cmd/vlan"
-	taskcmd "github.com/6547709/goct/cmd/task"
-	alertcmd "github.com/6547709/goct/cmd/alert"
-	usercmd "github.com/6547709/goct/cmd/user"
 	"github.com/6547709/goct/pkg/client"
 	"github.com/6547709/goct/pkg/config"
 	"github.com/6547709/goct/pkg/debug"
@@ -82,18 +83,20 @@ func init() {
 		&cobra.Group{ID: "task", Title: "Tasks:"},
 		&cobra.Group{ID: "alert", Title: "Alerts:"},
 		&cobra.Group{ID: "user", Title: "Users:"},
+		&cobra.Group{ID: "metrics", Title: "Metrics:"},
 	)
 
+	alert.Register(rootCmd)
+	cluster.Register(rootCmd)
+	datastore.Register(rootCmd)
+	host.Register(rootCmd)
+	metrics.Register(rootCmd)
+	network.Register(rootCmd)
 	system.Register(rootCmd)
+	task.Register(rootCmd)
+	user.Register(rootCmd)
+	vlan.Register(rootCmd)
 	vmcmd.Register(rootCmd)
-	hostcmd.Register(rootCmd)
-	clustercmd.Register(rootCmd)
-	dscmd.Register(rootCmd)
-	netcmd.Register(rootCmd)
-	vlancmd.Register(rootCmd)
-	taskcmd.Register(rootCmd)
-	alertcmd.Register(rootCmd)
-	usercmd.Register(rootCmd)
 }
 
 // Execute 是 main.go 的唯一入口。
