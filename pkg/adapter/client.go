@@ -41,6 +41,8 @@ type Client interface {
 	TaskOps
 	AlertOps
 	UserOps
+	TemplateOps
+	MetricsOps
 	// GetTaskProgress 实现 task.Ops 接口，让 watcher 能轮询任务状态。
 	GetTaskProgress(ctx context.Context, id string) (percent int, status string, err error)
 }
