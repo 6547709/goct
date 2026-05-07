@@ -59,5 +59,7 @@ func toTask(t *models.Task) Task {
 	if t.Progress != nil { out.Progress = int(*t.Progress) }
 	if t.ErrorMessage != nil { out.ErrorMessage = *t.ErrorMessage }
 	if t.LocalCreatedAt != nil { out.CreatedAt = *t.LocalCreatedAt }
+	if t.StartedAt != nil { out.StartedAt = *t.StartedAt }
+	if t.FinishedAt != nil { out.FinishedAt = *t.FinishedAt }
 	return out
 }

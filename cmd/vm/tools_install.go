@@ -9,29 +9,36 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func newMigrate() *cobra.Command {
-	var host string
+func newToolsInstall() *cobra.Command {
 	c := &cobra.Command{
-		Use: "vm.migrate [name|id]", Short: "Migrate a VM to another host (random if --host not specified)", GroupID: groupID,
-		Args: cobra.MaximumNArgs(1),
+		Use:   "vm.tools.install [vm-name|vm-id]",
+		Short: "Install VMware Tools on VM",
+		Long: `Install VMware Tools on a virtual machine.
+
+Examples:
+  goct vm.tools.install myvm`,
+		GroupID: groupID,
+		Args:    cobra.MaximumNArgs(1),
 		RunE: func(c *cobra.Command, args []string) error {
 			cli := client.From(c.Context())
 			id, err := resolveVMArg(args)
 			if err != nil {
 				return err
 			}
-			ref, err := service.NewVM(cli).Migrate(c.Context(), id, host)
+			ref, err := service.NewVM(cli).InstallVmtools(c.Context(), id)
 			if err != nil {
 				return err
 			}
+			if ref.ID == "already-installed" {
+				fmt.Fprintln(c.OutOrStdout(), "VMware Tools already installed")
+				return nil
+			}
 			if ref.IsSync() {
-				fmt.Fprintln(c.OutOrStdout(), "VM migrated (sync)")
 				return nil
 			}
 			w := task.New(cli, task.Options{Out: c.OutOrStderr()})
 			return w.Watch(c.Context(), ref.ID)
 		},
 	}
-	c.Flags().StringVar(&host, "host", "", "Target host name or ID (optional, random host if not specified)")
 	return c
 }

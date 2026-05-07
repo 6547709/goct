@@ -1,37 +1,37 @@
 package vm
 
 import (
-	"fmt"
-
 	"github.com/6547709/goct/pkg/client"
 	"github.com/6547709/goct/pkg/service"
 	"github.com/6547709/goct/pkg/task"
 	"github.com/spf13/cobra"
 )
 
-func newMigrate() *cobra.Command {
-	var host string
+func newShutDown() *cobra.Command {
 	c := &cobra.Command{
-		Use: "vm.migrate [name|id]", Short: "Migrate a VM to another host (random if --host not specified)", GroupID: groupID,
-		Args: cobra.MaximumNArgs(1),
+		Use:   "vm.shutdown [name|id]",
+		Short: "Gracefully shut down a VM (guest OS shutdown)",
+		Long: `Send a graceful shutdown request to the VM's guest OS.
+Unlike vm.power.off which cuts power, this signals the OS to shut down cleanly.
+Requires VMtools to be installed and running in the guest.`,
+		GroupID: groupID,
+		Args:    cobra.MaximumNArgs(1),
 		RunE: func(c *cobra.Command, args []string) error {
 			cli := client.From(c.Context())
 			id, err := resolveVMArg(args)
 			if err != nil {
 				return err
 			}
-			ref, err := service.NewVM(cli).Migrate(c.Context(), id, host)
+			ref, err := service.NewVM(cli).ShutDown(c.Context(), id)
 			if err != nil {
 				return err
 			}
 			if ref.IsSync() {
-				fmt.Fprintln(c.OutOrStdout(), "VM migrated (sync)")
 				return nil
 			}
 			w := task.New(cli, task.Options{Out: c.OutOrStderr()})
 			return w.Watch(c.Context(), ref.ID)
 		},
 	}
-	c.Flags().StringVar(&host, "host", "", "Target host name or ID (optional, random host if not specified)")
 	return c
 }

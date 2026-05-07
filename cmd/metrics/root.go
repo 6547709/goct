@@ -24,4 +24,11 @@ func Register(root *cobra.Command) {
 	rootCmd.PersistentFlags().StringVar(&rangeFlag, "range", "5m", "Time range: 5m, 1h, 1d, 7d")
 	rootCmd.PersistentFlags().BoolVar(&latestFlag, "latest", false, "Show only latest value")
 	rootCmd.PersistentFlags().StringVar(&formatFlag, "format", "table", "Output format: table, json, chart")
+
+	rootCmd.AddCommand(newVMMetrics())
+	rootCmd.AddCommand(newHostMetrics())
+	rootCmd.AddCommand(newVmVolumeMetrics())
+	rootCmd.AddCommand(newClusterMetrics())
+	rootCmd.AddCommand(newVolumeMetrics())
+	rootCmd.AddCommand(newSFSMetrics())
 }

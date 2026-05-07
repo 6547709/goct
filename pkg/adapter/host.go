@@ -13,6 +13,8 @@ import (
 type HostOps interface {
 	ListHosts(ctx context.Context, opts ListOpts) ([]Host, error)
 	GetHost(ctx context.Context, id string) (*Host, error)
+	GetHostByName(ctx context.Context, name string) (*Host, error)
+	ListHostsByCluster(ctx context.Context, clusterID string) ([]Host, error)
 	EnterMaintenanceMode(ctx context.Context, id string) (TaskRef, error)
 	ExitMaintenanceMode(ctx context.Context, id string) (TaskRef, error)
 	ShutdownHost(ctx context.Context, id string, force bool) (TaskRef, error)
@@ -71,6 +73,42 @@ func (c *defaultClient) GetHost(ctx context.Context, id string) (*Host, error) {
 	}
 	h := toHost(resp.Payload[0])
 	return &h, nil
+}
+
+func (c *defaultClient) GetHostByName(ctx context.Context, name string) (*Host, error) {
+	params := sdkhost.NewGetHostsParams()
+	params.SetContext(ctx)
+	params.SetRequestBody(&models.GetHostsRequestBody{
+		Where: &models.HostWhereInput{Name: &name},
+	})
+	resp, err := c.api.Host.GetHosts(params)
+	if err != nil {
+		return nil, fmt.Errorf("get host by name %s: %w", name, err)
+	}
+	if len(resp.Payload) == 0 {
+		return nil, fmt.Errorf("get host by name %s: %w", name, ErrNotFound)
+	}
+	h := toHost(resp.Payload[0])
+	return &h, nil
+}
+
+func (c *defaultClient) ListHostsByCluster(ctx context.Context, clusterID string) ([]Host, error) {
+	params := sdkhost.NewGetHostsParams()
+	params.SetContext(ctx)
+	params.SetRequestBody(&models.GetHostsRequestBody{
+		Where: &models.HostWhereInput{
+			Cluster: &models.ClusterWhereInput{ID: pointy.String(clusterID)},
+		},
+	})
+	resp, err := c.api.Host.GetHosts(params)
+	if err != nil {
+		return nil, fmt.Errorf("list hosts by cluster %s: %w", clusterID, err)
+	}
+	out := make([]Host, 0, len(resp.Payload))
+	for _, h := range resp.Payload {
+		out = append(out, toHost(h))
+	}
+	return out, nil
 }
 
 func (c *defaultClient) EnterMaintenanceMode(ctx context.Context, id string) (TaskRef, error) {

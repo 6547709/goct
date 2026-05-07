@@ -10,7 +10,8 @@ import (
 )
 
 func newInfo() *cobra.Command {
-	return &cobra.Command{
+	var detail bool
+	c := &cobra.Command{
 		Use: "vm.info [name|id]", Short: "Show VM details", GroupID: groupID,
 		Args: cobra.MaximumNArgs(1),
 		RunE: func(c *cobra.Command, args []string) error {
@@ -28,11 +29,18 @@ func newInfo() *cobra.Command {
 				return output.Render(c.OutOrStdout(), []any{*v}, format, nil)
 			}
 			// key-value table
-			rows := output.VMInfoRows(*v)
+			var rows [][]string
+			if detail {
+				rows = output.VMDetailRows(*v)
+			} else {
+				rows = output.VMInfoRows(*v)
+			}
 			for _, row := range rows {
 				fmt.Fprintf(c.OutOrStdout(), "%-12s %s\n", row[0]+":", row[1])
 			}
 			return nil
 		},
 	}
+	c.Flags().BoolVar(&detail, "detail", false, "Show detailed VM information (includes BIOS UUID, GPU/USB devices, usage stats, etc.)")
+	return c
 }

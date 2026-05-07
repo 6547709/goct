@@ -7,6 +7,7 @@ import (
 	"github.com/openlyinc/pointy"
 	sdkds "github.com/smartxworks/cloudtower-go-sdk/v2/client/elf_data_store"
 	sdkdisk "github.com/smartxworks/cloudtower-go-sdk/v2/client/disk"
+	sdkdiskpool "github.com/smartxworks/cloudtower-go-sdk/v2/client/disk_pool"
 	"github.com/smartxworks/cloudtower-go-sdk/v2/models"
 )
 
@@ -15,6 +16,7 @@ type DatastoreOps interface {
 	ListDatastores(ctx context.Context, opts ListOpts) ([]Datastore, error)
 	GetDatastore(ctx context.Context, id string) (*Datastore, error)
 	ListDisks(ctx context.Context, hostID string) ([]Disk, error)
+	ListDiskPools(ctx context.Context, opts ListOpts) ([]DiskPool, error)
 }
 
 func (c *defaultClient) ListDatastores(ctx context.Context, opts ListOpts) ([]Datastore, error) {
@@ -126,6 +128,74 @@ func toDisk(d *models.Disk) Disk {
 	}
 	if d.Host != nil && d.Host.Name != nil {
 		out.HostName = *d.Host.Name
+	}
+	return out
+}
+
+func (c *defaultClient) ListDiskPools(ctx context.Context, opts ListOpts) ([]DiskPool, error) {
+	params := sdkdiskpool.NewGetDiskPoolsParams()
+	params.SetContext(ctx)
+	body := &models.GetDiskPoolsRequestBody{}
+	if opts.ClusterID != "" {
+		where := &models.DiskPoolWhereInput{
+			Host: &models.HostWhereInput{Cluster: &models.ClusterWhereInput{ID: pointy.String(opts.ClusterID)}},
+		}
+		body.Where = where
+	}
+	if opts.Limit > 0 {
+		body.First = pointy.Int32(opts.Limit)
+	}
+	params.SetRequestBody(body)
+	resp, err := c.api.DiskPool.GetDiskPools(params)
+	if err != nil {
+		return nil, fmt.Errorf("list disk pools: %w", err)
+	}
+	out := make([]DiskPool, 0, len(resp.Payload))
+	for _, dp := range resp.Payload {
+		out = append(out, toDiskPool(dp))
+	}
+	return out, nil
+}
+
+func toDiskPool(dp *models.DiskPool) DiskPool {
+	out := DiskPool{}
+	if dp.ID != nil {
+		out.ID = *dp.ID
+	}
+	if dp.Status != nil {
+		out.Status = string(*dp.Status)
+	}
+	if dp.UseState != nil {
+		out.UseState = string(*dp.UseState)
+	}
+	if dp.TotalDataCapacity != nil {
+		out.TotalDataBytes = uint64(*dp.TotalDataCapacity)
+	}
+	if dp.UsedDataSpace != nil {
+		out.UsedDataBytes = uint64(*dp.UsedDataSpace)
+	}
+	if dp.TotalCacheCapacity != nil {
+		out.TotalCacheBytes = uint64(*dp.TotalCacheCapacity)
+	}
+	if dp.UsedCacheSpace != nil {
+		out.UsedCacheBytes = uint64(*dp.UsedCacheSpace)
+	}
+	if dp.HddDiskCount != nil {
+		out.HddCount = *dp.HddDiskCount
+	}
+	if dp.NvmeSsdDiskCount != nil {
+		out.NvmeCount = *dp.NvmeSsdDiskCount
+	}
+	if dp.SataOrSasSsdDiskCount != nil {
+		out.SataCount = *dp.SataOrSasSsdDiskCount
+	}
+	if dp.Host != nil {
+		if dp.Host.ID != nil {
+			out.HostID = *dp.Host.ID
+		}
+		if dp.Host.Name != nil {
+			out.HostName = *dp.Host.Name
+		}
 	}
 	return out
 }

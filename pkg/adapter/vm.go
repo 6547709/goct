@@ -7,6 +7,8 @@ import (
 
 	"github.com/openlyinc/pointy"
 	"github.com/smartxworks/cloudtower-go-sdk/v2/client/vm"
+	"github.com/smartxworks/cloudtower-go-sdk/v2/client/vm_disk"
+	"github.com/smartxworks/cloudtower-go-sdk/v2/client/vm_nic"
 	"github.com/smartxworks/cloudtower-go-sdk/v2/models"
 )
 
@@ -20,6 +22,38 @@ type VMOps interface {
 	MigrateVM(ctx context.Context, id, hostID string) (TaskRef, error)
 	ExportVM(ctx context.Context, id string, spec VMExportSpec) (TaskRef, error)
 	PowerVM(ctx context.Context, id string, action PowerAction, force bool) (TaskRef, error)
+	UpdateVM(ctx context.Context, id string, spec VMUpdateSpec) (TaskRef, error)
+	MoveToRecycle(ctx context.Context, id string) (TaskRef, error)
+	RecoverFromRecycle(ctx context.Context, id string) (TaskRef, error)
+	ShutDownVM(ctx context.Context, id string) (TaskRef, error)
+	AddDisk(ctx context.Context, vmID string, spec DiskAddSpec) (TaskRef, error)
+	ExpandDisk(ctx context.Context, vmID, diskID string, sizeBytes int64) (TaskRef, error)
+	RemoveDisk(ctx context.Context, vmID, diskID string) (TaskRef, error)
+	AddCdRom(ctx context.Context, vmID string, isoPath string) (TaskRef, error)
+	EjectCdRom(ctx context.Context, cdromID string) (TaskRef, error)
+	RemoveCdRom(ctx context.Context, vmID, cdromID string) (TaskRef, error)
+	// NIC 操作
+	AddNic(ctx context.Context, vmID string, spec NicAddSpec) (TaskRef, error)
+	RemoveNic(ctx context.Context, vmID string, nicIndex int32) (TaskRef, error)
+	ListVMNics(ctx context.Context, vmID string) ([]VMNic, error)
+	UpdateNic(ctx context.Context, nicID string, spec VMNicUpdateSpec) (TaskRef, error)
+	// GPU 操作
+	AddGpuDevice(ctx context.Context, vmID, gpuDeviceID string) (TaskRef, error)
+	RemoveGpuDevice(ctx context.Context, vmID, gpuDeviceID string) (TaskRef, error)
+	// 磁盘操作
+	ListVMDisks(ctx context.Context, vmID string) ([]VMDisk, error)
+	UpdateDisk(ctx context.Context, diskID string, spec DiskUpdateSpec) (TaskRef, error)
+	// CD-ROM 操作
+	ToggleCdRom(ctx context.Context, cdromID string, spec CdRomToggleSpec) (TaskRef, error)
+	// 其他
+	InstallVmtools(ctx context.Context, vmID string) (TaskRef, error)
+	GetVNCInfo(ctx context.Context, vmID string) (*VNCInfo, error)
+	CreateVMFromTemplate(ctx context.Context, spec VMCreateFromTemplateSpec) (TaskRef, error)
+	MigrateAcrossCluster(ctx context.Context, vmID, targetClusterID string, hostID string) (TaskRef, error)
+	ResetPassword(ctx context.Context, vmID string, spec ResetPasswordSpec) (TaskRef, error)
+	RebuildVM(ctx context.Context, vmID string, spec RebuildVMSpec) (TaskRef, error)
+	AbortMigrateAcrossCluster(ctx context.Context, vmID string) (TaskRef, error)
+	ConvertToVM(ctx context.Context, templateID string) (TaskRef, error)
 }
 
 // ---------- ListVMs ----------
@@ -95,6 +129,10 @@ func (c *defaultClient) CreateVM(ctx context.Context, spec VMCreateSpec) (TaskRe
 		cores = 1
 	}
 
+	// 默认创建一个 10GB SCSI 磁盘
+	defaultDiskSize := int64(10 * 1024 * 1024 * 1024) // 10GB
+	bus := models.BusSCSI
+
 	p := &models.VMCreationParams{
 		ClusterID:  pointy.String(spec.ClusterID),
 		Name:       pointy.String(spec.Name),
@@ -104,6 +142,26 @@ func (c *defaultClient) CreateVM(ctx context.Context, spec VMCreateSpec) (TaskRe
 		Memory:     pointy.Int64(spec.MemoryBytes),
 		Firmware:   &fw,
 		Status:     modelVMStatusStopped(),
+		// 必须提供 vm_disks 和 vm_nics
+		VMDisks: &models.VMDiskParams{
+			MountNewCreateDisks: []*models.MountNewCreateDisksParams{
+				{
+					Boot: pointy.Int32(0),
+					Bus:   &bus,
+					Index: pointy.Int32(0),
+					VMVolume: &models.MountNewCreateDisksParamsVMVolume{
+						Name: pointy.String("disk0"),
+						Size: pointy.Int64(defaultDiskSize),
+					},
+				},
+			},
+		},
+		VMNics: []*models.VMNicParams{
+			{
+				Type:  models.VMNicTypeVLAN.Pointer(),
+				Model: models.VMNicModelVIRTIO.Pointer(),
+			},
+		},
 	}
 	if spec.Description != "" {
 		p.Description = pointy.String(spec.Description)
@@ -276,6 +334,419 @@ func (c *defaultClient) PowerVM(ctx context.Context, id string, action PowerActi
 	}
 }
 
+// ---------- UpdateVM ----------
+
+func (c *defaultClient) UpdateVM(ctx context.Context, id string, spec VMUpdateSpec) (TaskRef, error) {
+	where := &models.VMWhereInput{ID: pointy.String(id)}
+	data := &models.VMUpdateParamsData{}
+	if spec.Name != "" {
+		data.Name = pointy.String(spec.Name)
+	}
+	if spec.Description != "" {
+		data.Description = pointy.String(spec.Description)
+	}
+	params := vm.NewUpdateVMParams()
+	params.SetContext(ctx)
+	params.SetRequestBody(&models.VMUpdateParams{Where: where, Data: data})
+	resp, err := c.api.VM.UpdateVM(params)
+	if err != nil {
+		return TaskRef{}, fmt.Errorf("update vm %s: %w", id, err)
+	}
+	return firstVMTaskRef(resp.Payload), nil
+}
+
+// ---------- MoveToRecycle ----------
+
+func (c *defaultClient) MoveToRecycle(ctx context.Context, id string) (TaskRef, error) {
+	where := &models.VMWhereInput{ID: pointy.String(id)}
+	params := vm.NewMoveVMToRecycleBinParams()
+	params.SetContext(ctx)
+	params.SetRequestBody(&models.VMOperateParams{Where: where})
+	resp, err := c.api.VM.MoveVMToRecycleBin(params)
+	if err != nil {
+		return TaskRef{}, fmt.Errorf("move vm %s to recycle: %w", id, err)
+	}
+	return firstDeleteVMTaskRef(resp.Payload), nil
+}
+
+// ---------- RecoverFromRecycle ----------
+
+func (c *defaultClient) RecoverFromRecycle(ctx context.Context, id string) (TaskRef, error) {
+	where := &models.VMWhereInput{ID: pointy.String(id)}
+	params := vm.NewRecoverVMFromRecycleBinParams()
+	params.SetContext(ctx)
+	params.SetRequestBody(&models.VMOperateParams{Where: where})
+	resp, err := c.api.VM.RecoverVMFromRecycleBin(params)
+	if err != nil {
+		return TaskRef{}, fmt.Errorf("recover vm %s from recycle: %w", id, err)
+	}
+	return firstDeleteVMTaskRef(resp.Payload), nil
+}
+
+// ---------- ShutDownVM ----------
+
+func (c *defaultClient) ShutDownVM(ctx context.Context, id string) (TaskRef, error) {
+	where := &models.VMWhereInput{ID: pointy.String(id)}
+	params := vm.NewShutDownVMParams()
+	params.SetContext(ctx)
+	params.SetRequestBody(&models.VMOperateParams{Where: where})
+	resp, err := c.api.VM.ShutDownVM(params)
+	if err != nil {
+		return TaskRef{}, fmt.Errorf("shutdown vm %s: %w", id, err)
+	}
+	return firstVMTaskRef(resp.Payload), nil
+}
+
+// ---------- AddDisk ----------
+
+func (c *defaultClient) AddDisk(ctx context.Context, vmID string, spec DiskAddSpec) (TaskRef, error) {
+	bus := models.BusSCSI
+	switch spec.Bus {
+	case "IDE":
+		bus = models.BusIDE
+	case "VIRTIO", "NVMe", "NVME":
+		bus = models.BusVIRTIO
+	}
+
+	bootVal := int32(0)
+	if spec.Boot > 0 {
+		bootVal = spec.Boot
+	}
+
+	data := &models.VMAddDiskParamsData{
+		VMDisks: &models.VMAddDiskParamsDataVMDisks{
+			MountNewCreateDisks: []*models.MountNewCreateDisksParams{
+				{
+					Boot:  pointy.Int32(bootVal),
+					Bus:   &bus,
+					Index: pointy.Int32(spec.Index),
+					VMVolume: &models.MountNewCreateDisksParamsVMVolume{
+						Name: pointy.String(spec.Name),
+						Size: pointy.Int64(spec.SizeBytes),
+					},
+					MaxIops: pointy.Int64(spec.IOPSMax),
+				},
+			},
+		},
+	}
+
+	params := vm.NewAddVMDiskParams()
+	params.SetContext(ctx)
+	params.SetRequestBody(&models.VMAddDiskParams{
+		Where: &models.VMWhereInput{ID: pointy.String(vmID)},
+		Data:  data,
+	})
+	resp, err := c.api.VM.AddVMDisk(params)
+	if err != nil {
+		return TaskRef{}, fmt.Errorf("add disk to vm %s: %w", vmID, err)
+	}
+	return firstVMTaskRef(resp.Payload), nil
+}
+
+// ---------- ExpandDisk ----------
+
+func (c *defaultClient) ExpandDisk(ctx context.Context, vmID, diskID string, sizeBytes int64) (TaskRef, error) {
+	params := vm.NewExpandVMDiskParams()
+	params.SetContext(ctx)
+	params.SetRequestBody(&models.VMExpandVMDiskParams{
+		Where: &models.VMDiskWhereInput{ID: pointy.String(diskID), VM: &models.VMWhereInput{ID: pointy.String(vmID)}},
+		Size:  pointy.Int64(sizeBytes),
+	})
+	resp, err := c.api.VM.ExpandVMDisk(params)
+	if err != nil {
+		return TaskRef{}, fmt.Errorf("expand disk %s: %w", diskID, err)
+	}
+	return firstVMTaskRef(resp.Payload), nil
+}
+
+// ---------- RemoveDisk ----------
+
+func (c *defaultClient) RemoveDisk(ctx context.Context, vmID, diskID string) (TaskRef, error) {
+	params := vm.NewRemoveVMDiskParams()
+	params.SetContext(ctx)
+	params.SetRequestBody(&models.VMRemoveDiskParams{
+		Where: &models.VMWhereInput{ID: pointy.String(vmID)},
+		Data: &models.VMRemoveDiskParamsData{
+			DiskIds: []string{diskID},
+		},
+	})
+	resp, err := c.api.VM.RemoveVMDisk(params)
+	if err != nil {
+		return TaskRef{}, fmt.Errorf("remove disk %s: %w", diskID, err)
+	}
+	return firstVMTaskRef(resp.Payload), nil
+}
+
+// ---------- AddCdRom ----------
+
+func (c *defaultClient) AddCdRom(ctx context.Context, vmID string, isoPath string) (TaskRef, error) {
+	params := vm.NewAddVMCdRomParams()
+	params.SetContext(ctx)
+	params.SetRequestBody(&models.VMAddCdRomParams{
+		Where: &models.VMWhereInput{ID: pointy.String(vmID)},
+		Data: &models.VMAddCdRomParamsData{
+			VMCdRoms: []*models.VMCdRomParams{
+				{
+					Boot:        pointy.Int32(0),
+					ElfImageID: pointy.String(isoPath),
+				},
+			},
+		},
+	})
+	resp, err := c.api.VM.AddVMCdRom(params)
+	if err != nil {
+		return TaskRef{}, fmt.Errorf("add cdrom to vm %s: %w", vmID, err)
+	}
+	return firstVMTaskRef(resp.Payload), nil
+}
+
+// ---------- EjectCdRom ----------
+
+func (c *defaultClient) EjectCdRom(ctx context.Context, cdromID string) (TaskRef, error) {
+	params := vm.NewEjectIsoFromVMCdRomParams()
+	params.SetContext(ctx)
+	params.SetRequestBody(&models.VMEjectCdRomParams{
+		Where: &models.VMDiskWhereInput{ID: pointy.String(cdromID)},
+	})
+	resp, err := c.api.VM.EjectIsoFromVMCdRom(params)
+	if err != nil {
+		return TaskRef{}, fmt.Errorf("eject cdrom %s: %w", cdromID, err)
+	}
+	return firstVMTaskRef(resp.Payload), nil
+}
+
+// ---------- RemoveCdRom ----------
+
+func (c *defaultClient) RemoveCdRom(ctx context.Context, vmID, cdromID string) (TaskRef, error) {
+	params := vm.NewRemoveVMCdRomParams()
+	params.SetContext(ctx)
+	params.SetRequestBody(&models.VMRemoveCdRomParams{
+		Where: &models.VMWhereInput{ID: pointy.String(vmID)},
+		Data: &models.VMRemoveCdRomParamsData{
+			CdRomIds: []string{cdromID},
+		},
+	})
+	resp, err := c.api.VM.RemoveVMCdRom(params)
+	if err != nil {
+		return TaskRef{}, fmt.Errorf("remove cdrom %s: %w", cdromID, err)
+	}
+	return firstVMTaskRef(resp.Payload), nil
+}
+
+// ---------- AddNic ----------
+
+func (c *defaultClient) AddNic(ctx context.Context, vmID string, spec NicAddSpec) (TaskRef, error) {
+	nicType := models.VMNicTypeVLAN
+	if spec.Type == "VPC" {
+		nicType = models.VMNicTypeVPC
+	}
+	model := models.VMNicModel(spec.Model)
+	if spec.Model == "" {
+		model = models.VMNicModelVIRTIO
+	}
+	params := vm.NewAddVMNicParams()
+	params.SetContext(ctx)
+	params.SetRequestBody(&models.VMAddNicParams{
+		Where: &models.VMWhereInput{ID: pointy.String(vmID)},
+		Data: &models.VMAddNicParamsData{
+			VMNics: []*models.VMNicParams{
+				{
+					Type:  &nicType,
+					Model: &model,
+				},
+			},
+		},
+	})
+	resp, err := c.api.VM.AddVMNic(params)
+	if err != nil {
+		return TaskRef{}, fmt.Errorf("add nic to vm %s: %w", vmID, err)
+	}
+	return firstVMTaskRef(resp.Payload), nil
+}
+
+// ---------- RemoveNic ----------
+
+func (c *defaultClient) RemoveNic(ctx context.Context, vmID string, nicIndex int32) (TaskRef, error) {
+	params := vm.NewRemoveVMNicParams()
+	params.SetContext(ctx)
+	params.SetRequestBody(&models.VMRemoveNicParams{
+		Where: &models.VMWhereInput{ID: pointy.String(vmID)},
+		Data: &models.VMRemoveNicParamsData{
+			NicIndex: []int32{nicIndex},
+		},
+	})
+	resp, err := c.api.VM.RemoveVMNic(params)
+	if err != nil {
+		return TaskRef{}, fmt.Errorf("remove nic from vm %s: %w", vmID, err)
+	}
+	return firstVMTaskRef(resp.Payload), nil
+}
+
+// ---------- AddGpuDevice ----------
+
+func (c *defaultClient) AddGpuDevice(ctx context.Context, vmID, gpuDeviceID string) (TaskRef, error) {
+	params := vm.NewAddVMGpuDeviceParams()
+	params.SetContext(ctx)
+	params.SetRequestBody(&models.VMAddGpuDeviceParams{
+		Where: &models.VMWhereInput{ID: pointy.String(vmID)},
+		Data: []*models.VMGpuOperationParams{
+			{GpuID: pointy.String(gpuDeviceID)},
+		},
+	})
+	resp, err := c.api.VM.AddVMGpuDevice(params)
+	if err != nil {
+		return TaskRef{}, fmt.Errorf("add gpu device to vm %s: %w", vmID, err)
+	}
+	return firstVMTaskRef(resp.Payload), nil
+}
+
+// ---------- RemoveGpuDevice ----------
+
+func (c *defaultClient) RemoveGpuDevice(ctx context.Context, vmID, gpuDeviceID string) (TaskRef, error) {
+	params := vm.NewRemoveVMGpuDeviceParams()
+	params.SetContext(ctx)
+	params.SetRequestBody(&models.VMRemoveGpuDeviceParams{
+		Where: &models.VMWhereInput{ID: pointy.String(vmID)},
+		Data: []*models.VMGpuOperationParams{
+			{GpuID: pointy.String(gpuDeviceID)},
+		},
+	})
+	resp, err := c.api.VM.RemoveVMGpuDevice(params)
+	if err != nil {
+		return TaskRef{}, fmt.Errorf("remove gpu device from vm %s: %w", vmID, err)
+	}
+	return firstVMTaskRef(resp.Payload), nil
+}
+
+// ---------- InstallVmtools ----------
+
+func (c *defaultClient) InstallVmtools(ctx context.Context, vmID string) (TaskRef, error) {
+	params := vm.NewInstallVmtoolsParams()
+	params.SetContext(ctx)
+	params.SetRequestBody(&models.InstallVmtoolsParams{
+		Where: &models.VMWhereInput{ID: pointy.String(vmID)},
+	})
+	resp, err := c.api.VM.InstallVmtools(params)
+	if err != nil {
+		return TaskRef{}, fmt.Errorf("install vmtools on vm %s: %w", vmID, err)
+	}
+	return firstVMTaskRef(resp.Payload), nil
+}
+
+// ---------- GetVNCInfo ----------
+
+func (c *defaultClient) GetVNCInfo(ctx context.Context, vmID string) (*VNCInfo, error) {
+	params := vm.NewGetVMVncInfoParams()
+	params.SetContext(ctx)
+	params.SetRequestBody(&models.GetVMVncInfoParams{
+		VM: &models.VMWhereUniqueInput{ID: pointy.String(vmID)},
+	})
+	resp, err := c.api.VM.GetVMVncInfo(params)
+	if err != nil {
+		return nil, fmt.Errorf("get vnc info for vm %s: %w", vmID, err)
+	}
+	info := &VNCInfo{}
+	if resp.Payload.ClusterIP != nil {
+		info.ClusterIP = *resp.Payload.ClusterIP
+	}
+	if resp.Payload.Redirect != nil {
+		info.Redirect = *resp.Payload.Redirect
+	}
+	if resp.Payload.Terminal != nil {
+		info.Terminal = *resp.Payload.Terminal
+	}
+	if resp.Payload.Direct != nil {
+		info.Direct = *resp.Payload.Direct
+	}
+	return info, nil
+}
+
+// ---------- CreateVMFromTemplate ----------
+
+func (c *defaultClient) CreateVMFromTemplate(ctx context.Context, spec VMCreateFromTemplateSpec) (TaskRef, error) {
+	fw := models.VMFirmwareBIOS
+	if strings.EqualFold(spec.Firmware, "UEFI") {
+		fw = models.VMFirmwareUEFI
+	}
+	isFullCopy := spec.IsFullCopy
+	p := &models.VMCreateVMFromContentLibraryTemplateParams{
+		TemplateID: pointy.String(spec.TemplateID),
+		Name:       pointy.String(spec.Name),
+		ClusterID:  pointy.String(spec.ClusterID),
+		IsFullCopy: &isFullCopy,
+		Firmware:  &fw,
+	}
+	if spec.HostID != "" {
+		p.HostID = pointy.String(spec.HostID)
+	}
+	if spec.VCPU > 0 {
+		p.Vcpu = pointy.Int32(spec.VCPU)
+	}
+	if spec.MemoryBytes > 0 {
+		p.Memory = pointy.Int64(spec.MemoryBytes)
+	}
+	if spec.Description != "" {
+		p.Description = pointy.String(spec.Description)
+	}
+
+	// NIC 配置
+	if spec.NIC.Type != "" || spec.NIC.Model != "" || spec.NIC.VlanID != "" {
+		nicType := models.VMNicTypeVLAN
+		if spec.NIC.Type == "VPC" {
+			nicType = models.VMNicTypeVPC
+		}
+		model := models.VMNicModel(strings.ToUpper(spec.NIC.Model))
+		if model == "" {
+			model = models.VMNicModelVIRTIO
+		}
+		enabled := true
+		vmNics := []*models.VMNicParams{
+			{
+				Enabled: &enabled,
+				Type:   &nicType,
+				Model:  &model,
+			},
+		}
+		if spec.NIC.VlanID != "" {
+			vmNics[0].ConnectVlanID = pointy.String(spec.NIC.VlanID)
+		}
+		p.VMNics = vmNics
+	}
+
+	params := vm.NewCreateVMFromContentLibraryTemplateParams()
+	params.SetContext(ctx)
+	params.SetRequestBody([]*models.VMCreateVMFromContentLibraryTemplateParams{p})
+
+	resp, err := c.api.VM.CreateVMFromContentLibraryTemplate(params)
+	if err != nil {
+		return TaskRef{}, fmt.Errorf("create vm from template %s: %w", spec.TemplateID, err)
+	}
+	return firstVMTaskRef(resp.Payload), nil
+}
+
+// ---------- MigrateAcrossCluster ----------
+
+func (c *defaultClient) MigrateAcrossCluster(ctx context.Context, vmID, targetClusterID, hostID string) (TaskRef, error) {
+	params := vm.NewMigrateVMAcrossClusterParams()
+	params.SetContext(ctx)
+	data := &models.VMMigrateAcrossClusterParamsData{
+		ClusterID: pointy.String(targetClusterID),
+		VMConfig:  &models.MigrateVMConfig{},
+	}
+	if hostID != "" {
+		data.HostID = pointy.String(hostID)
+	}
+	params.SetRequestBody(&models.VMMigrateAcrossClusterParams{
+		Where: &models.VMWhereInput{ID: pointy.String(vmID)},
+		Data:  data,
+	})
+	resp, err := c.api.VM.MigrateVMAcrossCluster(params)
+	if err != nil {
+		return TaskRef{}, fmt.Errorf("migrate vm %s across cluster: %w", vmID, err)
+	}
+	return firstVMTaskRef(resp.Payload), nil
+}
+
 // ---------- 内部辅助 ----------
 
 // toVM 把 SDK models.VM 转成内部 VM 模型。
@@ -317,65 +788,122 @@ func toVM(v *models.VM) VM {
 	if v.Host != nil && v.Host.Name != nil {
 		out.HostName = *v.Host.Name
 	}
-	// HostIP: 优先用 Host.ManagementIP（宿主机 IP），兼容嵌套虚拟化场景（ NestedHost.ManagementIP）
 	if v.Host != nil && v.Host.ManagementIP != nil {
 		out.HostIP = *v.Host.ManagementIP
 	}
-	// Firmware: BIOS / UEFI
 	if v.Firmware != nil {
 		out.Firmware = string(*v.Firmware)
 	}
-	// Ha: 是否开启高可用
 	if v.Ha != nil {
 		out.Ha = *v.Ha
 	}
-	// GuestOS: Guest OS 类型
 	if v.GuestOsType != nil {
 		out.GuestOS = string(*v.GuestOsType)
 	}
-	// VMTools 状态和版本
 	if v.VMToolsStatus != nil {
 		out.VMToolsStatus = string(*v.VMToolsStatus)
 	}
 	if v.VMToolsVersion != nil {
 		out.VMToolsVersion = *v.VMToolsVersion
 	}
-	// CPU 型号
 	if v.CPUModel != nil {
 		out.CPUModel = *v.CPUModel
 	}
-	// DNS 服务器
 	if v.DNSServers != nil {
 		out.DNSServers = *v.DNSServers
 	}
-	// 主机名（Guest 内）
 	if v.Hostname != nil {
 		out.Hostname = *v.Hostname
 	}
-	// 磁盘/网卡数量
 	if v.VMDisks != nil {
 		out.DiskCount = len(v.VMDisks)
 	}
 	if v.VMNics != nil {
 		out.NicCount = len(v.VMNics)
 	}
-	// 存储：已分配（ProvisionedSize）和实际使用（UsedSize）
 	if v.ProvisionedSize != nil {
 		out.ProvisionedBytes = uint64(*v.ProvisionedSize)
 	}
 	if v.UsedSize != nil {
 		out.UsedBytes = uint64(*v.UsedSize)
 	}
-	// 回收站/保护状态
 	if v.InRecycleBin != nil {
 		out.InRecycleBin = *v.InRecycleBin
 	}
 	if v.Protected != nil {
 		out.Protected = *v.Protected
 	}
-	// 创建时间（本地时区格式）
 	if v.LocalCreatedAt != nil {
 		out.CreatedAt = *v.LocalCreatedAt
+	}
+	if v.BiosUUID != nil {
+		out.BiosUUID = *v.BiosUUID
+	}
+	if v.CPUUsage != nil {
+		out.CPUUsage = *v.CPUUsage
+	}
+	if v.MemoryUsage != nil {
+		out.MemoryUsage = *v.MemoryUsage
+	}
+	if v.GuestSizeUsage != nil {
+		out.GuestSizeUsage = *v.GuestSizeUsage
+	}
+	if v.GuestUsedSize != nil {
+		out.GuestUsedSize = *v.GuestUsedSize
+	}
+	if v.LogicalSizeBytes != nil {
+		out.LogicalSizeBytes = *v.LogicalSizeBytes
+	}
+	if v.VideoType != nil {
+		out.VideoType = string(*v.VideoType)
+	}
+	if v.NestedVirtualization != nil {
+		out.NestedVirt = *v.NestedVirtualization
+	}
+	if v.HaPriority != nil {
+		out.HaPriority = string(*v.HaPriority)
+	}
+	if v.CloudInitSupported != nil {
+		out.CloudInit = *v.CloudInitSupported
+	}
+	if v.Labels != nil {
+		for _, l := range v.Labels {
+			if l != nil {
+				label := *l.Key
+				if l.Value != nil {
+					label = *l.Key + "=" + *l.Value
+				}
+				out.Labels = append(out.Labels, label)
+			}
+		}
+	}
+	if v.UsbDevices != nil {
+		for _, d := range v.UsbDevices {
+			if d != nil {
+				dev := UsbDevice{}
+				if d.ID != nil {
+					dev.ID = *d.ID
+				}
+				if d.Name != nil {
+					dev.Name = *d.Name
+				}
+				out.UsbDevices = append(out.UsbDevices, dev)
+			}
+		}
+	}
+	if v.GpuDevices != nil {
+		for _, d := range v.GpuDevices {
+			if d != nil {
+				dev := GpuDevice{}
+				if d.ID != nil {
+					dev.ID = *d.ID
+				}
+				if d.Name != nil {
+					dev.Name = *d.Name
+				}
+				out.GpuDevices = append(out.GpuDevices, dev)
+			}
+		}
 	}
 	return out
 }
@@ -425,6 +953,301 @@ func firstExportTaskRef(items []*models.WithTaskVMExportFile) TaskRef {
 		ref.ID = *it.TaskID
 	}
 	return ref
+}
+
+// ---------- ListVMDisks ----------
+
+func (c *defaultClient) ListVMDisks(ctx context.Context, vmID string) ([]VMDisk, error) {
+	params := vm_disk.NewGetVMDisksParams()
+	params.SetContext(ctx)
+	params.SetRequestBody(&models.GetVMDisksRequestBody{
+		Where: &models.VMDiskWhereInput{
+			VM: &models.VMWhereInput{ID: pointy.String(vmID)},
+		},
+	})
+	resp, err := c.api.VMDisk.GetVMDisks(params)
+	if err != nil {
+		return nil, fmt.Errorf("list vm disks: %w", err)
+	}
+	out := make([]VMDisk, 0, len(resp.Payload))
+	for _, d := range resp.Payload {
+		out = append(out, toVMDisk(d))
+	}
+	return out, nil
+}
+
+func toVMDisk(d *models.VMDisk) VMDisk {
+	out := VMDisk{}
+	if d.ID != nil {
+		out.ID = *d.ID
+	}
+	if d.Boot != nil {
+		out.Boot = *d.Boot
+	}
+	if d.Bus != nil {
+		out.Bus = string(*d.Bus)
+	}
+	if d.Key != nil {
+		out.Key = *d.Key
+	}
+	if d.MaxBandwidth != nil {
+		out.MaxBandwidth = pointy.Int64(*d.MaxBandwidth)
+	}
+	if d.MaxIops != nil {
+		out.MaxIops = pointy.Int64(int64(*d.MaxIops))
+	}
+	if d.Type != nil {
+		out.Type = string(*d.Type)
+	}
+	if d.VM != nil && d.VM.ID != nil {
+		out.VMID = *d.VM.ID
+	}
+	if d.VMVolume != nil {
+		if d.VMVolume.ID != nil {
+			out.VolumeID = *d.VMVolume.ID
+		}
+		if d.VMVolume.Name != nil {
+			out.VolumeName = *d.VMVolume.Name
+		}
+	}
+	if d.ElfImage != nil {
+		if d.ElfImage.ID != nil {
+			out.ElfImageID = *d.ElfImage.ID
+		}
+		if d.ElfImage.Name != nil {
+			out.ElfImageName = *d.ElfImage.Name
+		}
+	}
+	return out
+}
+
+// ---------- ListVMNics ----------
+
+func (c *defaultClient) ListVMNics(ctx context.Context, vmID string) ([]VMNic, error) {
+	params := vm_nic.NewGetVMNicsParams()
+	params.SetContext(ctx)
+	params.SetRequestBody(&models.GetVMNicsRequestBody{
+		Where: &models.VMNicWhereInput{
+			VM: &models.VMWhereInput{ID: pointy.String(vmID)},
+		},
+	})
+	resp, err := c.api.VMNic.GetVMNics(params)
+	if err != nil {
+		return nil, fmt.Errorf("list vm nics: %w", err)
+	}
+	out := make([]VMNic, 0, len(resp.Payload))
+	for _, n := range resp.Payload {
+		out = append(out, toVMNic(n))
+	}
+	return out, nil
+}
+
+func toVMNic(n *models.VMNic) VMNic {
+	out := VMNic{}
+	if n.ID != nil {
+		out.ID = *n.ID
+	}
+	if n.LocalID != nil {
+		out.LocalID = *n.LocalID
+	}
+	if n.MacAddress != nil {
+		out.MacAddress = *n.MacAddress
+	}
+	if n.Model != nil {
+		out.Model = string(*n.Model)
+	}
+	if n.Type != nil {
+		out.Type = string(*n.Type)
+	}
+	if n.Gateway != nil {
+		out.Gateway = *n.Gateway
+	}
+	if n.SubnetMask != nil {
+		out.SubnetMask = *n.SubnetMask
+	}
+	if n.IPAddress != nil {
+		out.IPAddress = *n.IPAddress
+	}
+	if n.Enabled != nil {
+		out.Enabled = *n.Enabled
+	}
+	if n.VM != nil && n.VM.ID != nil {
+		out.VMID = *n.VM.ID
+	}
+	if n.Vlan != nil {
+		if n.Vlan.ID != nil {
+			out.VlanID = *n.Vlan.ID
+		}
+		if n.Vlan.Name != nil {
+			out.VlanName = *n.Vlan.Name
+		}
+	}
+	if n.IngressRateLimitMaxRateInBitps != nil {
+		rate := int64(*n.IngressRateLimitMaxRateInBitps)
+		out.IngressRateLimit = &rate
+	}
+	if n.EgressRateLimitMaxRateInBitps != nil {
+		rate := int64(*n.EgressRateLimitMaxRateInBitps)
+		out.EgressRateLimit = &rate
+	}
+	return out
+}
+
+// ---------- UpdateNic ----------
+
+func (c *defaultClient) UpdateNic(ctx context.Context, nicID string, spec VMNicUpdateSpec) (TaskRef, error) {
+	data := &models.VMUpdateNicParamsData{
+		NicID: pointy.String(nicID),
+	}
+	if spec.Enabled != nil {
+		data.Enabled = spec.Enabled
+	}
+	if spec.Gateway != "" {
+		data.Gateway = pointy.String(spec.Gateway)
+	}
+	if spec.IPAddress != "" {
+		data.IPAddress = pointy.String(spec.IPAddress)
+	}
+	if spec.MacAddress != "" {
+		data.MacAddress = pointy.String(spec.MacAddress)
+	}
+	if spec.Model != "" {
+		model := models.VMNicModel(spec.Model)
+		data.Model = &model
+	}
+	if spec.SubnetMask != "" {
+		data.SubnetMask = pointy.String(spec.SubnetMask)
+	}
+
+	params := vm.NewUpdateVMNicParams()
+	params.SetContext(ctx)
+	params.SetRequestBody(&models.VMUpdateNicParams{
+		Data: data,
+	})
+	resp, err := c.api.VM.UpdateVMNic(params)
+	if err != nil {
+		return TaskRef{}, fmt.Errorf("update nic %s: %w", nicID, err)
+	}
+	return firstVMTaskRef(resp.Payload), nil
+}
+
+// ---------- UpdateDisk ----------
+
+func (c *defaultClient) UpdateDisk(ctx context.Context, diskID string, spec DiskUpdateSpec) (TaskRef, error) {
+	data := &models.VMUpdateDiskParamsData{
+		VMDiskID: pointy.String(diskID),
+	}
+
+	params := vm.NewUpdateVMDiskParams()
+	params.SetContext(ctx)
+	params.SetRequestBody(&models.VMUpdateDiskParams{
+		Where: &models.VMWhereInput{ID: pointy.String(diskID)},
+		Data:  data,
+	})
+	resp, err := c.api.VM.UpdateVMDisk(params)
+	if err != nil {
+		return TaskRef{}, fmt.Errorf("update disk %s: %w", diskID, err)
+	}
+	return firstVMTaskRef(resp.Payload), nil
+}
+
+// ---------- ToggleCdRom ----------
+
+func (c *defaultClient) ToggleCdRom(ctx context.Context, cdromID string, spec CdRomToggleSpec) (TaskRef, error) {
+	params := vm.NewToggleVMCdRomDisableParams()
+	params.SetContext(ctx)
+	params.SetRequestBody(&models.VMToggleCdRomDisableParams{
+		Where:    &models.VMDiskWhereInput{ID: pointy.String(cdromID)},
+		Disabled: pointy.Bool(spec.Disabled),
+	})
+	resp, err := c.api.VM.ToggleVMCdRomDisable(params)
+	if err != nil {
+		return TaskRef{}, fmt.Errorf("toggle cdrom %s: %w", cdromID, err)
+	}
+	return firstVMTaskRef(resp.Payload), nil
+}
+
+// ---------- ResetPassword ----------
+
+func (c *defaultClient) ResetPassword(ctx context.Context, vmID string, spec ResetPasswordSpec) (TaskRef, error) {
+	params := vm.NewResetVMGuestOsPasswordParams()
+	params.SetContext(ctx)
+	params.SetRequestBody(&models.VMResetGuestOsPasswordParams{
+		Where: &models.VMWhereInput{ID: pointy.String(vmID)},
+		Data: &models.VMResetGuestOsPasswordParamsData{
+			Username: pointy.String(spec.Username),
+			Password: pointy.String(spec.Password),
+		},
+	})
+	resp, err := c.api.VM.ResetVMGuestOsPassword(params)
+	if err != nil {
+		return TaskRef{}, fmt.Errorf("reset password for vm %s: %w", vmID, err)
+	}
+	return firstVMTaskRef(resp.Payload), nil
+}
+
+// ---------- RebuildVM ----------
+
+func (c *defaultClient) RebuildVM(ctx context.Context, vmID string, spec RebuildVMSpec) (TaskRef, error) {
+	data := &models.VMRebuildParams{
+		Name: pointy.String(spec.Name),
+		RebuildFromSnapshotID: pointy.String(spec.SnapshotID),
+	}
+	if spec.ClusterID != "" {
+		data.ClusterID = pointy.String(spec.ClusterID)
+	}
+	if spec.HostID != "" {
+		data.HostID = pointy.String(spec.HostID)
+	}
+
+	params := vm.NewRebuildVMParams()
+	params.SetContext(ctx)
+	params.SetRequestBody([]*models.VMRebuildParams{data})
+	resp, err := c.api.VM.RebuildVM(params)
+	if err != nil {
+		return TaskRef{}, fmt.Errorf("rebuild vm %s: %w", vmID, err)
+	}
+	return firstVMTaskRef(resp.Payload), nil
+}
+
+// ---------- AbortMigrateAcrossCluster ----------
+
+func (c *defaultClient) AbortMigrateAcrossCluster(ctx context.Context, vmID string) (TaskRef, error) {
+	params := vm.NewAbortMigrateVMAcrossClusterParams()
+	params.SetContext(ctx)
+	params.SetRequestBody(&models.AbortMigrateVMAcrossClusterParams{
+		Tasks: &models.TaskWhereInput{},
+	})
+	resp, err := c.api.VM.AbortMigrateVMAcrossCluster(params)
+	if err != nil {
+		return TaskRef{}, fmt.Errorf("abort migrate vm %s: %w", vmID, err)
+	}
+	if len(resp.Payload) == 0 {
+		return TaskRef{}, nil
+	}
+	ref := TaskRef{EntityKind: "Task"}
+	if resp.Payload[0].ID != nil {
+		ref.ID = *resp.Payload[0].ID
+	}
+	return ref, nil
+}
+
+// ---------- ConvertToVM ----------
+
+func (c *defaultClient) ConvertToVM(ctx context.Context, templateID string) (TaskRef, error) {
+	params := vm.NewConvertVMTemplateToVMParams()
+	params.SetContext(ctx)
+	params.SetRequestBody([]*models.ConvertVMTemplateToVMParams{
+		{
+			ConvertedFromTemplateID: pointy.String(templateID),
+			Name: pointy.String(""),
+		},
+	})
+	resp, err := c.api.VM.ConvertVMTemplateToVM(params)
+	if err != nil {
+		return TaskRef{}, fmt.Errorf("convert template %s to vm: %w", templateID, err)
+	}
+	return firstVMTaskRef(resp.Payload), nil
 }
 
 // modelVMStatusStopped 返回 VM 创建时的初始状态。

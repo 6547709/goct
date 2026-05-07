@@ -44,9 +44,29 @@ var VMListColumns = []Column{
 var TaskListColumns = []Column{
 	{Header: "ID", Get: func(v any) string { return v.(adapter.Task).ID }},
 	{Header: "STATUS", Get: func(v any) string { return v.(adapter.Task).Status }},
-	{Header: "PROGRESS", Get: func(v any) string { return fmt.Sprintf("%d%%", v.(adapter.Task).Progress) }},
+	{Header: "PROGRESS", Get: func(v any) string {
+		p := v.(adapter.Task).Progress
+		if p == 0 {
+			return "-"
+		}
+		return fmt.Sprintf("%d%%", p)
+	}},
 	{Header: "DESCRIPTION", Get: func(v any) string { return v.(adapter.Task).Description }},
 	{Header: "CREATED", Get: func(v any) string { return v.(adapter.Task).CreatedAt }},
+	{Header: "STARTED", Get: func(v any) string {
+		s := v.(adapter.Task).StartedAt
+		if s == "" {
+			return "-"
+		}
+		return s
+	}},
+	{Header: "FINISHED", Get: func(v any) string {
+		s := v.(adapter.Task).FinishedAt
+		if s == "" {
+			return "-"
+		}
+		return s
+	}},
 }
 
 // AlertListColumns 是 alert.ls 的表格列定义。
@@ -101,6 +121,26 @@ var DatastoreListColumns = []Column{
 	{Header: "CLUSTER", Get: func(v any) string { return v.(adapter.Datastore).ClusterID }},
 }
 
+// DiskPoolListColumns 是 storage.pool.ls 的表格列定义（超融合存储池）。
+var DiskPoolListColumns = []Column{
+	{Header: "ID", Get: func(v any) string { return v.(adapter.DiskPool).ID }},
+	{Header: "HOST", Get: func(v any) string { return v.(adapter.DiskPool).HostName }},
+	{Header: "STATUS", Get: func(v any) string { return v.(adapter.DiskPool).Status }},
+	{Header: "USE", Get: func(v any) string { return v.(adapter.DiskPool).UseState }},
+	{Header: "CAPACITY", Get: func(v any) string {
+		return HumanBytes(v.(adapter.DiskPool).TotalDataBytes)
+	}},
+	{Header: "USED", Get: func(v any) string {
+		return HumanBytes(v.(adapter.DiskPool).UsedDataBytes)
+	}},
+	{Header: "CACHE", Get: func(v any) string {
+		return HumanBytes(v.(adapter.DiskPool).TotalCacheBytes)
+	}},
+	{Header: "HDD", Get: func(v any) string { return fmt.Sprintf("%d", v.(adapter.DiskPool).HddCount) }},
+	{Header: "NVME", Get: func(v any) string { return fmt.Sprintf("%d", v.(adapter.DiskPool).NvmeCount) }},
+	{Header: "SATA", Get: func(v any) string { return fmt.Sprintf("%d", v.(adapter.DiskPool).SataCount) }},
+}
+
 // DiskListColumns 是 datastore.disk.ls 的表格列定义。
 var DiskListColumns = []Column{
 	{Header: "ID", Get: func(v any) string { return v.(adapter.Disk).ID }},
@@ -150,6 +190,55 @@ var SnapshotListColumns = []Column{
 	}},
 	{Header: "DESCRIPTION", Get: func(v any) string { return v.(adapter.Snapshot).Description }},
 }
+
+// VMDiskListColumns 是 vm.disk.ls 的表格列定义。
+var VMDiskListColumns = []Column{
+	{Header: "ID", Get: func(v any) string { return v.(adapter.VMDisk).ID }},
+	{Header: "VM", Get: func(v any) string { return v.(adapter.VMDisk).VMID }},
+	{Header: "BOOT", Get: func(v any) string { return fmt.Sprintf("%d", v.(adapter.VMDisk).Boot) }},
+	{Header: "BUS", Get: func(v any) string { return v.(adapter.VMDisk).Bus }},
+	{Header: "TYPE", Get: func(v any) string { return v.(adapter.VMDisk).Type }},
+	{Header: "VOLUME", Get: func(v any) string { return v.(adapter.VMDisk).VolumeName }},
+	{Header: "SIZE", Get: func(v any) string { return HumanBytes(uint64(v.(adapter.VMDisk).VolumeSize)) }},
+	{Header: "MAX BW", Get: func(v any) string {
+		if v.(adapter.VMDisk).MaxBandwidth == nil {
+			return "-"
+		}
+		return fmt.Sprintf("%d", *v.(adapter.VMDisk).MaxBandwidth)
+	}},
+	{Header: "MAX IOPS", Get: func(v any) string {
+		if v.(adapter.VMDisk).MaxIops == nil {
+			return "-"
+		}
+		return fmt.Sprintf("%d", *v.(adapter.VMDisk).MaxIops)
+	}},
+}
+
+// VMNicListColumns 是 vm.nic.ls 的表格列定义。
+var VMNicListColumns = []Column{
+	{Header: "ID", Get: func(v any) string { return v.(adapter.VMNic).ID }},
+	{Header: "VM", Get: func(v any) string { return v.(adapter.VMNic).VMID }},
+	{Header: "LOCAL ID", Get: func(v any) string { return v.(adapter.VMNic).LocalID }},
+	{Header: "MAC", Get: func(v any) string { return v.(adapter.VMNic).MacAddress }},
+	{Header: "MODEL", Get: func(v any) string { return v.(adapter.VMNic).Model }},
+	{Header: "TYPE", Get: func(v any) string { return v.(adapter.VMNic).Type }},
+	{Header: "VLAN", Get: func(v any) string { return v.(adapter.VMNic).VlanID }},
+	{Header: "IP", Get: func(v any) string { return v.(adapter.VMNic).IPAddress }},
+	{Header: "GATEWAY", Get: func(v any) string { return v.(adapter.VMNic).Gateway }},
+	{Header: "ENABLED", Get: func(v any) string {
+		if v.(adapter.VMNic).Enabled {
+			return "true"
+		}
+		return "false"
+	}},
+}
+
+// GpuDeviceListColumns 是 vm.gpu.ls 的表格列定义。
+var GpuDeviceListColumns = []Column{
+	{Header: "ID", Get: func(v any) string { return v.(adapter.GpuDevice).ID }},
+	{Header: "NAME", Get: func(v any) string { return v.(adapter.GpuDevice).Name }},
+}
+
 var VMInfoColumns = []Column{
 	{Header: "FIELD", Get: func(_ any) string { return "" }},
 	{Header: "VALUE", Get: func(_ any) string { return "" }},
@@ -221,4 +310,93 @@ func VMInfoRows(v adapter.VM) [][]string {
 		{"Created", v.CreatedAt},
 		{"Description", desc},
 	}
+}
+
+// VMDetailRows 返回 VM 的详细 key-value 行用于 info --detail 展示（包含额外字段）。
+func VMDetailRows(v adapter.VM) [][]string {
+	// Start with the base info rows
+	rows := VMInfoRows(v)
+
+	// Helper to format optional float
+	formatFloat := func(f float64) string {
+		if f == 0 {
+			return "-"
+		}
+		return fmt.Sprintf("%.1f%%", f)
+	}
+
+	// Helper for bool string
+	formatBool := func(b bool) string {
+		if b {
+			return "true"
+		}
+		return "false"
+	}
+
+	// Append detail fields
+	nestedVirtStr := formatBool(v.NestedVirt)
+	if !v.NestedVirt {
+		nestedVirtStr = "false"
+	}
+
+	cloudInitStr := "false"
+	if v.CloudInit {
+		cloudInitStr = "true"
+	}
+
+	haPriority := v.HaPriority
+	if haPriority == "" {
+		haPriority = "-"
+	}
+
+	biosUUID := v.BiosUUID
+	if biosUUID == "" {
+		biosUUID = "-"
+	}
+
+	labelsStr := "-"
+	if len(v.Labels) > 0 {
+		labelsStr = strings.Join(v.Labels, ", ")
+	}
+
+	gpuStr := "-"
+	if len(v.GpuDevices) > 0 {
+		var names []string
+		for _, d := range v.GpuDevices {
+			names = append(names, d.Name)
+		}
+		gpuStr = strings.Join(names, ", ")
+	}
+
+	usbStr := "-"
+	if len(v.UsbDevices) > 0 {
+		var names []string
+		for _, d := range v.UsbDevices {
+			names = append(names, d.Name)
+		}
+		usbStr = strings.Join(names, ", ")
+	}
+
+	videoType := v.VideoType
+	if videoType == "" {
+		videoType = "-"
+	}
+
+	detailRows := [][]string{
+		{"---", "---"},
+		{"Bios UUID", biosUUID},
+		{"CPU Usage", formatFloat(v.CPUUsage)},
+		{"Memory Usage", formatFloat(v.MemoryUsage)},
+		{"Guest Size Usage", formatFloat(v.GuestSizeUsage)},
+		{"Guest Used Size", HumanBytes(uint64(v.GuestUsedSize))},
+		{"Logical Size", HumanBytes(uint64(v.LogicalSizeBytes))},
+		{"Nested Virt", nestedVirtStr},
+		{"CloudInit", cloudInitStr},
+		{"HA Priority", haPriority},
+		{"Video Type", videoType},
+		{"GPU Devices", gpuStr},
+		{"USB Devices", usbStr},
+		{"Labels", labelsStr},
+	}
+	return append(rows, detailRows...)
 }

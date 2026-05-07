@@ -9,7 +9,7 @@ import (
 
 // fakeSnapshotClient 同时实现 VMOps 和 SnapshotOps。
 type fakeSnapshotClient struct {
-	*fakeVMOps
+	*fakeClient
 	snaps []adapter.Snapshot
 }
 
@@ -37,7 +37,7 @@ func (f *fakeSnapshotClient) DeleteSnapshot(_ context.Context, _ string) (adapte
 
 func newFakeSnapshotClient() *fakeSnapshotClient {
 	return &fakeSnapshotClient{
-		fakeVMOps: newFakeVMOps(),
+		fakeClient: newFakeClient(),
 		snaps: []adapter.Snapshot{
 			{ID: "snap-1", Name: "daily-backup", VMID: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"},
 			{ID: "snap-2", Name: "before-upgrade", VMID: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"},

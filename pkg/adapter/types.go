@@ -49,6 +49,33 @@ type VM struct {
 	Protected       bool
 	CreatedAt       string
 	Description     string
+
+	// Detail fields (available via --detail)
+	BiosUUID         string
+	CPUUsage         float64
+	MemoryUsage      float64
+	GuestSizeUsage   float64
+	GuestUsedSize    int64
+	LogicalSizeBytes int64
+	UsbDevices       []UsbDevice
+	GpuDevices       []GpuDevice
+	VideoType        string
+	NestedVirt       bool
+	HaPriority       string
+	Labels           []string
+	CloudInit        bool
+}
+
+// GpuDevice represents a GPU device attached to a VM.
+type GpuDevice struct {
+	ID   string
+	Name string
+}
+
+// UsbDevice represents a USB device attached to a VM.
+type UsbDevice struct {
+	ID   string
+	Name string
 }
 
 // TaskRef 是写操作返回的 task 引用。
@@ -82,6 +109,8 @@ type Task struct {
 	Progress     int
 	ErrorMessage string
 	CreatedAt    string
+	FinishedAt   string
+	StartedAt    string
 }
 
 // Alert 是 CLI 内部用的告警视图。
@@ -154,6 +183,23 @@ type Datastore struct {
 	ClusterID string
 }
 
+// DiskPool 是超融合存储池视图（每个Host上的本地存储聚合）。
+type DiskPool struct {
+	ID              string
+	HostID          string
+	HostName        string
+	ClusterID       string
+	Status          string
+	UseState        string
+	TotalDataBytes  uint64
+	UsedDataBytes   uint64
+	TotalCacheBytes uint64
+	UsedCacheBytes  uint64
+	HddCount       int32
+	NvmeCount      int32
+	SataCount      int32
+}
+
 // Disk 是 CLI 内部用的磁盘视图。
 type Disk struct {
 	ID        string
@@ -196,6 +242,27 @@ type VMCreateSpec struct {
 	Description string
 }
 
+// VMCreateFromTemplateSpec 是 vm.create --from-template 命令的参数集合。
+type VMCreateFromTemplateSpec struct {
+	TemplateID  string
+	Name        string
+	ClusterID   string
+	HostID      string
+	VCPU        int32
+	MemoryBytes int64
+	Firmware    string
+	Description string
+	IsFullCopy  bool
+	NIC         NicConfig // 网卡配置
+}
+
+// NicConfig 网卡配置
+type NicConfig struct {
+	Type   string // VLAN / VPC
+	Model  string // E1000 / SRIOV / VIRTIO
+	VlanID string
+}
+
 // VMCloneSpec 是 vm.clone 命令需要的参数集合。
 type VMCloneSpec struct {
 	Name            string
@@ -206,6 +273,127 @@ type VMCloneSpec struct {
 type VMExportSpec struct {
 	FileType string // OVF (default)
 	KeepMAC  bool
+}
+
+// VMUpdateSpec 是 vm.update 命令的参数。
+type VMUpdateSpec struct {
+	Name        string
+	Description string
+}
+
+// DiskAddSpec 是 vm disk.add 命令的参数。
+type DiskAddSpec struct {
+	Name      string
+	SizeBytes int64
+	Bus       string // SCSI / SATA / NVMe / IDE / VIRTIO
+	Index     int32
+	Boot      int32
+	IOPSMax   int64
+}
+
+// CdRomAddSpec 是 vm cdrom.add 命令的参数。
+type CdRomAddSpec struct {
+	Boot int32
+	Path string // ISO path or content library image ID
+}
+
+// NicAddSpec 是 vm nic.add 命令的参数。
+type NicAddSpec struct {
+	Type    string // NIC_TYPE_NORMAL / NIC_TYPE_DIRECT
+	Model   string // RTL8139 / E1000 / VIRTIO
+	VlanID  string
+}
+
+// VMNic 是 VM 网卡视图（用于列表和详情）。
+type VMNic struct {
+	ID              string
+	VMID            string
+	LocalID         string // NIC index (string in SDK)
+	MacAddress      string
+	Model           string
+	Type            string // VLAN / VPC
+	VlanID          string
+	VlanName        string
+	Gateway         string
+	SubnetMask      string
+	IPAddress       string
+	Enabled         bool
+	IngressRateLimit  *int64
+	EgressRateLimit   *int64
+}
+
+// VMNicUpdateSpec 是 vm nic.update 命令的参数。
+type VMNicUpdateSpec struct {
+	NicIndex      int32
+	ConnectVlanID string
+	Enabled       *bool
+	Gateway       string
+	IPAddress     string
+	MacAddress    string
+	Model         string
+	SubnetMask    string
+}
+
+// VMDisk 是 VM 磁盘视图（用于列表，包含 CD-ROM）。
+type VMDisk struct {
+	ID              string
+	VMID            string
+	Boot            int32
+	Bus             string // SCSI / SATA / NVMe / IDE / VIRTIO
+	Key             int32
+	MaxBandwidth    *int64
+	MaxIops         *int64
+	Type            string // DISK / CD_ROM
+	VolumeID        string
+	VolumeName      string
+	VolumeSize      int64
+	ElfImageID      string
+	ElfImageName    string
+}
+
+// DiskUpdateSpec 是 vm disk.update 命令的参数。
+type DiskUpdateSpec struct {
+	MaxBandwidth *int64
+	MaxIops      *int64
+}
+
+// CdRomToggleSpec 是 vm cdrom.toggle 命令的参数。
+type CdRomToggleSpec struct {
+	Disabled bool
+}
+
+// ResetPasswordSpec 是 vm reset-password 命令的参数。
+type ResetPasswordSpec struct {
+	Username string
+	Password string
+}
+
+// RebuildVMSpec 是 vm rebuild 命令的参数。
+type RebuildVMSpec struct {
+	SnapshotID string
+	Name      string
+	ClusterID string
+	HostID    string
+}
+
+// ImportVMSpec 是 vm import 命令的参数。
+type ImportVMSpec struct {
+	ClusterID  string
+	Name      string
+	CPUCores  int32
+	CPUSockets int32
+	Memory    int64
+	Vcpu      int32
+	Ha        bool
+	HostID    string
+}
+
+// VNCInfo 是 VM VNC 连接信息。
+type VNCInfo struct {
+	ClusterIP string
+	Redirect  string
+	Terminal string
+	Direct   string
 }
 
 // PowerAction 抽象 VM 电源操作动作。

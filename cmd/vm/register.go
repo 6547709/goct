@@ -5,16 +5,30 @@ import "github.com/spf13/cobra"
 
 const groupID = "vm"
 
-// Register 把所有 vm + vm.snapshot 子命令挂到 rootCmd。
 func Register(root *cobra.Command) {
 	root.AddCommand(
-		newLs(), newInfo(),
+		newLs(), newInfo(), newIp(),
 		newCreate(), newClone(), newDestroy(),
-		newMigrate(), newExport(),
+		newUpdate(),
+		newMigrate(), newMigrateAcrossCluster(), newMigrateAbort(), newExport(),
 		newPowerOn(), newPowerOff(), newPowerReset(),
 		newPowerSuspend(), newPowerResume(),
+		newShutDown(),
+		newRecycle(), newRecover(),
+		// vm.disk.*
+		newDiskLs(), newDiskAdd(), newDiskExpand(), newDiskRm(), newDiskUpdate(),
+		// vm.cdrom.*
+		newCdRomLs(), newCdRomAdd(), newCdRomEject(), newCdRomRm(), newCdRomToggle(),
+		// vm.nic.*
+		newNicLs(), newNicAdd(), newNicRm(), newNicUpdate(),
+		// vm.gpu.*
+		newGpuLs(), newGpuAdd(), newGpuRm(),
+		// vm.vnc & vm.tools
+		newVNC(), newToolsInstall(),
 		// vm.snapshot.*
 		newSnapshotLs(), newSnapshotCreate(),
 		newSnapshotRevert(), newSnapshotRm(),
+		// vm.rebuild & misc
+		newRebuild(), newResetPassword(), newConvertToVM(),
 	)
 }

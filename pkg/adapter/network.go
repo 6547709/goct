@@ -20,6 +20,7 @@ type NetworkOps interface {
 type VLANOps interface {
 	ListVLANs(ctx context.Context, opts ListOpts) ([]VLAN, error)
 	GetVLAN(ctx context.Context, id string) (*VLAN, error)
+	GetVLANByName(ctx context.Context, name string) (*VLAN, error)
 	CreateVLAN(ctx context.Context, spec VLANCreateSpec) (TaskRef, error)
 	DeleteVLAN(ctx context.Context, id string) (TaskRef, error)
 }
@@ -113,6 +114,23 @@ func (c *defaultClient) GetVLAN(ctx context.Context, id string) (*VLAN, error) {
 	}
 	if len(resp.Payload) == 0 {
 		return nil, fmt.Errorf("get vlan %s: %w", id, ErrNotFound)
+	}
+	v := toVLAN(resp.Payload[0])
+	return &v, nil
+}
+
+func (c *defaultClient) GetVLANByName(ctx context.Context, name string) (*VLAN, error) {
+	params := sdkvlan.NewGetVlansParams()
+	params.SetContext(ctx)
+	params.SetRequestBody(&models.GetVlansRequestBody{
+		Where: &models.VlanWhereInput{Name: &name},
+	})
+	resp, err := c.api.Vlan.GetVlans(params)
+	if err != nil {
+		return nil, fmt.Errorf("get vlan by name %s: %w", name, err)
+	}
+	if len(resp.Payload) == 0 {
+		return nil, fmt.Errorf("get vlan by name %s: %w", name, ErrNotFound)
 	}
 	v := toVLAN(resp.Payload[0])
 	return &v, nil

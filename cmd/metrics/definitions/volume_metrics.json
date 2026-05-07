@@ -1,0 +1,194 @@
+{
+  "volume_metrics": [
+    {
+      "name": "zbs_volume_avg_iodepth",
+      "description": "虚拟卷 IODepth",
+      "version": ""
+    },
+    {
+      "name": "zbs_volume_cap_shared_logical_size_bytes",
+      "description": "虚拟卷容量层共享逻辑空间大小",
+      "version": ""
+    },
+    {
+      "name": "zbs_volume_cap_unique_logical_size_bytes",
+      "description": "虚拟卷容量层独占逻辑空间大小",
+      "version": ""
+    },
+    {
+      "name": "zbs_volume_ioctx_local_read_iops",
+      "description": "虚拟卷本地 IOCtx 读 IOPS",
+      "version": ""
+    },
+    {
+      "name": "zbs_volume_ioctx_local_read_latency_ns",
+      "description": "虚拟卷本地 IOCtx 读平均延迟",
+      "version": ""
+    },
+    {
+      "name": "zbs_volume_ioctx_local_read_speed_bps",
+      "description": "虚拟卷本地 IOCtx 读带宽",
+      "version": ""
+    },
+    {
+      "name": "zbs_volume_ioctx_local_readwrite_iops",
+      "description": "虚拟卷本地 IOCtx 读写 IOPS",
+      "version": ""
+    },
+    {
+      "name": "zbs_volume_ioctx_local_readwrite_latency_ns",
+      "description": "虚拟卷本地 IOCtx 平均延迟",
+      "version": ""
+    },
+    {
+      "name": "zbs_volume_ioctx_local_readwrite_speed_bps",
+      "description": "虚拟卷本地 IOCtx 读写带宽",
+      "version": ""
+    },
+    {
+      "name": "zbs_volume_ioctx_local_write_iops",
+      "description": "虚拟卷本地 IOCtx 写 IOPS",
+      "version": ""
+    },
+    {
+      "name": "zbs_volume_ioctx_local_write_latency_ns",
+      "description": "虚拟卷本地 IOCtx 写平均延迟",
+      "version": ""
+    },
+    {
+      "name": "zbs_volume_ioctx_local_write_speed_bps",
+      "description": "虚拟卷本地 IOCtx 写带宽",
+      "version": ""
+    },
+    {
+      "name": "zbs_volume_ioctx_read_iops",
+      "description": "虚拟卷 IOCtx 读 IOPS",
+      "version": ""
+    },
+    {
+      "name": "zbs_volume_ioctx_read_latency_ns",
+      "description": "虚拟卷 IOCtx 读平均延迟",
+      "version": ""
+    },
+    {
+      "name": "zbs_volume_ioctx_read_speed_bps",
+      "description": "虚拟卷 IOCtx 读带宽",
+      "version": ""
+    },
+    {
+      "name": "zbs_volume_ioctx_readwrite_iops",
+      "description": "虚拟卷 IOCtx 读写 IOPS",
+      "version": ""
+    },
+    {
+      "name": "zbs_volume_ioctx_readwrite_latency_ns",
+      "description": "虚拟卷 IOCtx 平均延迟",
+      "version": ""
+    },
+    {
+      "name": "zbs_volume_ioctx_readwrite_speed_bps",
+      "description": "虚拟卷 IOCtx 读写带宽",
+      "version": ""
+    },
+    {
+      "name": "zbs_volume_ioctx_write_iops",
+      "description": "虚拟卷 IOCtx 写 IOPS",
+      "version": ""
+    },
+    {
+      "name": "zbs_volume_ioctx_write_latency_ns",
+      "description": "虚拟卷 IOCtx 写平均延迟",
+      "version": ""
+    },
+    {
+      "name": "zbs_volume_ioctx_write_speed_bps",
+      "description": "虚拟卷 IOCtx 写带宽",
+      "version": ""
+    },
+    {
+      "name": "zbs_volume_logical_size_bytes",
+      "description": "虚拟卷总逻辑大小",
+      "version": ""
+    },
+    {
+      "name": "zbs_volume_logical_used_size_bytes",
+      "description": "虚拟卷已使用逻辑空间大小",
+      "version": ""
+    },
+    {
+      "name": "zbs_volume_perf_shared_logical_size_bytes",
+      "description": "虚拟卷性能层共享逻辑空间大小",
+      "version": ""
+    },
+    {
+      "name": "zbs_volume_perf_unique_logical_size_bytes",
+      "description": "虚拟卷性能层独占逻辑空间大小",
+      "version": ""
+    },
+    {
+      "name": "zbs_volume_read_iops",
+      "description": "虚拟卷读 IOPS",
+      "version": ""
+    },
+    {
+      "name": "zbs_volume_read_latency_ns",
+      "description": "虚拟卷读 IO 平均延迟",
+      "version": ""
+    },
+    {
+      "name": "zbs_volume_read_size_bytes",
+      "description": "虚拟卷读请求平均大小",
+      "version": ""
+    },
+    {
+      "name": "zbs_volume_read_speed_bps",
+      "description": "虚拟卷读带宽",
+      "version": ""
+    },
+    {
+      "name": "zbs_volume_readwrite_iop30s",
+      "description": "虚拟卷过去 30s 的 IO 总数",
+      "version": ""
+    },
+    {
+      "name": "zbs_volume_readwrite_iops",
+      "description": "虚拟卷的读写 IOPS",
+      "version": ""
+    },
+    {
+      "name": "zbs_volume_readwrite_latency_ns",
+      "description": "虚拟卷平均 IO 延迟",
+      "version": ""
+    },
+    {
+      "name": "zbs_volume_readwrite_size_bytes",
+      "description": "虚拟卷平均请求大小",
+      "version": ""
+    },
+    {
+      "name": "zbs_volume_readwrite_speed_bps",
+      "description": "虚拟卷读写带宽",
+      "version": ""
+    },
+    {
+      "name": "zbs_volume_write_iops",
+      "description": "虚拟卷写 IOPS",
+      "version": ""
+    },
+    {
+      "name": "zbs_volume_write_latency_ns",
+      "description": "虚拟卷写 IO 平均延迟",
+      "version": ""
+    },
+    {
+      "name": "zbs_volume_write_size_bytes",
+      "description": "虚拟卷写请求平均大小",
+      "version": ""
+    },
+    {
+      "name": "zbs_volume_write_speed_bps",
+      "description": "虚拟卷写带宽",
+      "version": ""
+    }
+  ]
+}

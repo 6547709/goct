@@ -21,3 +21,7 @@ func (s *DatastoreService) Resolve(ctx context.Context, idOrName string) (*adapt
 func (s *DatastoreService) ListDisks(ctx context.Context, hostID string) ([]adapter.Disk, error) {
 	return s.c.ListDisks(ctx, hostID)
 }
+
+func (s *DatastoreService) ListDiskPools(ctx context.Context, opts adapter.ListOpts) ([]adapter.DiskPool, error) {
+	return s.c.ListDiskPools(ctx, opts)
+}

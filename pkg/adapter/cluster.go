@@ -13,6 +13,7 @@ import (
 type ClusterOps interface {
 	ListClusters(ctx context.Context, opts ListOpts) ([]Cluster, error)
 	GetCluster(ctx context.Context, id string) (*Cluster, error)
+	GetClusterByName(ctx context.Context, name string) (*Cluster, error)
 }
 
 func (c *defaultClient) ListClusters(ctx context.Context, opts ListOpts) ([]Cluster, error) {
@@ -55,6 +56,23 @@ func (c *defaultClient) GetCluster(ctx context.Context, id string) (*Cluster, er
 	}
 	if len(resp.Payload) == 0 {
 		return nil, fmt.Errorf("get cluster %s: %w", id, ErrNotFound)
+	}
+	cl := toCluster(resp.Payload[0])
+	return &cl, nil
+}
+
+func (c *defaultClient) GetClusterByName(ctx context.Context, name string) (*Cluster, error) {
+	params := sdkcluster.NewGetClustersParams()
+	params.SetContext(ctx)
+	params.SetRequestBody(&models.GetClustersRequestBody{
+		Where: &models.ClusterWhereInput{Name: &name},
+	})
+	resp, err := c.api.Cluster.GetClusters(params)
+	if err != nil {
+		return nil, fmt.Errorf("get cluster by name %s: %w", name, err)
+	}
+	if len(resp.Payload) == 0 {
+		return nil, fmt.Errorf("get cluster by name %s: %w", name, ErrNotFound)
 	}
 	cl := toCluster(resp.Payload[0])
 	return &cl, nil
