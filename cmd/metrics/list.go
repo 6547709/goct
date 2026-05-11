@@ -98,3 +98,16 @@ func loadMetrics(name string) ([]listMetric, error) {
 
 	return nil, fmt.Errorf("metric type %s not found", name)
 }
+
+// GetMetricNames returns only metric names for completion
+func GetMetricNames(metricType string) ([]string, error) {
+	data, err := loadMetrics(metricType)
+	if err != nil {
+		return nil, err
+	}
+	names := make([]string, len(data))
+	for i, m := range data {
+		names[i] = m.Name
+	}
+	return names, nil
+}

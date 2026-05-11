@@ -12,11 +12,21 @@ func newVMMetrics() *cobra.Command {
 		Use:   "vm.metrics <metric> [vm-name]",
 		Short: "Query VM metrics (elf_*)",
 		Long:  "Query VM metrics with optional VM name filter. Example: vm.metrics elf_cpu_usage vm001",
-		Args:  func(cmd *cobra.Command, args []string) error {
+		Args: func(cmd *cobra.Command, args []string) error {
 			if listFlag {
 				return nil
 			}
 			return cobra.RangeArgs(1, 2)(cmd, args)
+		},
+		ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+			if len(args) == 0 {
+				names, err := GetMetricNames("vm")
+				if err != nil {
+					return nil, cobra.ShellCompDirectiveNoFileComp
+				}
+				return names, cobra.ShellCompDirectiveNoFileComp
+			}
+			return nil, cobra.ShellCompDirectiveNoFileComp
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if listFlag {
@@ -45,4 +55,13 @@ func newVMMetrics() *cobra.Command {
 		},
 	}
 	return c
+}
+
+func RegisterVMMetrics(root *cobra.Command) {
+	c := newVMMetrics()
+	c.Flags().BoolVar(&listFlag, "list", false, "List available metrics")
+	c.Flags().StringVar(&rangeFlag, "range", "5m", "Time range: 5m, 1h, 1d, 7d")
+	c.Flags().BoolVar(&latestFlag, "latest", false, "Show only latest value")
+	c.Flags().StringVar(&formatFlag, "format", "table", "Output format: table, json, chart")
+	root.AddCommand(c)
 }

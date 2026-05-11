@@ -90,13 +90,20 @@ func init() {
 	cluster.Register(rootCmd)
 	datastore.Register(rootCmd)
 	host.Register(rootCmd)
-	metrics.Register(rootCmd)
 	network.Register(rootCmd)
 	system.Register(rootCmd)
 	task.Register(rootCmd)
 	user.Register(rootCmd)
 	vlan.Register(rootCmd)
 	vmcmd.Register(rootCmd)
+
+	// metrics 子命令直接注册到根命令（去除 metrics 前缀）
+	metrics.RegisterVMMetrics(rootCmd)
+	metrics.RegisterHostMetrics(rootCmd)
+	metrics.RegisterVmVolumeMetrics(rootCmd)
+	metrics.RegisterClusterMetrics(rootCmd)
+	metrics.RegisterVolumeMetrics(rootCmd)
+	metrics.RegisterSFSMetrics(rootCmd)
 }
 
 // Execute 是 main.go 的唯一入口。

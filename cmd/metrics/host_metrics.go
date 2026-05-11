@@ -12,11 +12,21 @@ func newHostMetrics() *cobra.Command {
 		Use:   "host.metrics <metric> [host-name]",
 		Short: "Query Host metrics",
 		Long:  "Query Host metrics with optional host name filter. Example: host.metrics elf_host_cpu_usage host001",
-		Args:  func(cmd *cobra.Command, args []string) error {
+		Args: func(cmd *cobra.Command, args []string) error {
 			if listFlag {
 				return nil
 			}
 			return cobra.RangeArgs(1, 2)(cmd, args)
+		},
+		ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+			if len(args) == 0 {
+				names, err := GetMetricNames("host")
+				if err != nil {
+					return nil, cobra.ShellCompDirectiveNoFileComp
+				}
+				return names, cobra.ShellCompDirectiveNoFileComp
+			}
+			return nil, cobra.ShellCompDirectiveNoFileComp
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if listFlag {
@@ -45,4 +55,13 @@ func newHostMetrics() *cobra.Command {
 		},
 	}
 	return c
+}
+
+func RegisterHostMetrics(root *cobra.Command) {
+	c := newHostMetrics()
+	c.Flags().BoolVar(&listFlag, "list", false, "List available metrics")
+	c.Flags().StringVar(&rangeFlag, "range", "5m", "Time range: 5m, 1h, 1d, 7d")
+	c.Flags().BoolVar(&latestFlag, "latest", false, "Show only latest value")
+	c.Flags().StringVar(&formatFlag, "format", "table", "Output format: table, json, chart")
+	root.AddCommand(c)
 }

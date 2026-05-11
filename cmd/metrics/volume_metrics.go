@@ -12,11 +12,21 @@ func newVolumeMetrics() *cobra.Command {
 		Use:   "volume.metrics <metric> [volume-name]",
 		Short: "Query Volume metrics",
 		Long:  "Query independent volume metrics with optional volume name filter. Example: volume.metrics zbs_volume_read_iops volume001",
-		Args:  func(cmd *cobra.Command, args []string) error {
+		Args: func(cmd *cobra.Command, args []string) error {
 			if listFlag {
 				return nil
 			}
 			return cobra.RangeArgs(1, 2)(cmd, args)
+		},
+		ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+			if len(args) == 0 {
+				names, err := GetMetricNames("volume")
+				if err != nil {
+					return nil, cobra.ShellCompDirectiveNoFileComp
+				}
+				return names, cobra.ShellCompDirectiveNoFileComp
+			}
+			return nil, cobra.ShellCompDirectiveNoFileComp
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if listFlag {
@@ -45,4 +55,13 @@ func newVolumeMetrics() *cobra.Command {
 		},
 	}
 	return c
+}
+
+func RegisterVolumeMetrics(root *cobra.Command) {
+	c := newVolumeMetrics()
+	c.Flags().BoolVar(&listFlag, "list", false, "List available metrics")
+	c.Flags().StringVar(&rangeFlag, "range", "5m", "Time range: 5m, 1h, 1d, 7d")
+	c.Flags().BoolVar(&latestFlag, "latest", false, "Show only latest value")
+	c.Flags().StringVar(&formatFlag, "format", "table", "Output format: table, json, chart")
+	root.AddCommand(c)
 }

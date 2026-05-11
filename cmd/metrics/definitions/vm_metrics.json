@@ -1,61 +1,6 @@
 {
   "vm_metrics": [
     {
-      "name": "elf_cluster_cpu_model_compatibility",
-      "description": "集群虚拟机 CPU 模型兼容性是否兼容于所有主机",
-      "version": "v5.1.0 及以上"
-    },
-    {
-      "name": "elf_cluster_memory_provisioned_bytes",
-      "description": "集群上的 VM 分配的内存大小",
-      "version": "v5.1.0 及以上"
-    },
-    {
-      "name": "elf_cluster_memory_provisioned_running_bytes",
-      "description": "集群上开启电源的 VM 分配的内存大小",
-      "version": "v5.1.0 及以上"
-    },
-    {
-      "name": "elf_cluster_vcpus_provisioned",
-      "description": "集群上的 VM 分配的 vCPU 数量",
-      "version": "v5.1.0 及以上"
-    },
-    {
-      "name": "elf_cluster_vcpus_provisioned_running",
-      "description": "集群上开启电源的 VM 分配的 vCPU 数量",
-      "version": "v5.1.0 及以上"
-    },
-    {
-      "name": "elf_host_memory_ha_status",
-      "description": "当主机离线时，表示主机上所有 VM 的 HA 是否可以重建（0=可以，1=不可以）",
-      "version": "v6.0.0 及以上"
-    },
-    {
-      "name": "elf_host_memory_provisioned_bytes",
-      "description": "主机上的 VM 分配的内存大小",
-      "version": "v5.1.0 及以上"
-    },
-    {
-      "name": "elf_host_memory_provisioned_running_bytes",
-      "description": "主机上开启电源的 VM 分配的内存大小",
-      "version": "v5.1.0 及以上"
-    },
-    {
-      "name": "elf_host_vcpu_and_cpu_ratio",
-      "description": "主机上的 VM 分配的 vCPU 数量与物理 CPU 数量的比例",
-      "version": "v5.1.0 及以上"
-    },
-    {
-      "name": "elf_host_vcpus_provisioned",
-      "description": "主机上的 VM 分配的 vCPU 数量",
-      "version": "v5.1.0 及以上"
-    },
-    {
-      "name": "elf_host_vcpus_provisioned_running",
-      "description": "主机上开启电源的 VM 分配的 vCPU 数量",
-      "version": "v5.1.0 及以上"
-    },
-    {
       "name": "elf_shared_vm_disk_avg_read_latency_ns",
       "description": "VM 所有共享 volume 的平均读延迟",
       "version": "v5.1.0 及以上"
@@ -394,11 +339,6 @@
       "name": "elf_vm_zbs_pextent_replica_number_on_node",
       "description": "虚拟机 pextent 副本分布情况",
       "version": "v5.1.0 及以上"
-    },
-    {
-      "name": "elf_volume_resident_in_cache",
-      "description": "表示常驻缓存的卷是否处于活动状态",
-      "version": "v6.0.0 及以上"
     }
   ]
 }
