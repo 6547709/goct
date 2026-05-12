@@ -13,8 +13,9 @@ import (
 func newRebuild() *cobra.Command {
 	var name, clusterID, hostID string
 	c := &cobra.Command{
-		Use:   "rebuild [vm-name|vm-id] [snapshot-id]",
-		Short: "Rebuild VM from snapshot",
+		Use:     "vm.rebuild [vm-name|vm-id] [snapshot-id]",
+		Short:   "Rebuild VM from snapshot",
+		GroupID: "vm",
 		Long: `Rebuild a virtual machine from a snapshot.
 
 Examples:
@@ -53,8 +54,9 @@ Examples:
 func newResetPassword() *cobra.Command {
 	var username, password string
 	c := &cobra.Command{
-		Use:   "reset-password [vm-name|vm-id]",
-		Short: "Reset guest OS password",
+		Use:     "vm.reset-password [vm-name|vm-id]",
+		Short:   "Reset guest OS password",
+		GroupID: "vm",
 		Long: `Reset the guest OS administrator password on a VM.
 
 Examples:
@@ -84,8 +86,9 @@ Examples:
 
 func newMigrateAbort() *cobra.Command {
 	c := &cobra.Command{
-		Use:   "migrate.abort [vm-name|vm-id]",
-		Short: "Abort cross-cluster migration",
+		Use:     "vm.migrate.abort [vm-name|vm-id]",
+		Short:   "Abort cross-cluster migration",
+		GroupID: "vm",
 		Long: `Abort an in-progress cross-cluster migration.
 
 Examples:

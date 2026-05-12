@@ -73,12 +73,6 @@ type GpuDevice struct {
 	Name string
 }
 
-// UsbDevice represents a USB device attached to a VM.
-type UsbDevice struct {
-	ID   string
-	Name string
-}
-
 // TaskRef 是写操作返回的 task 引用。
 //
 //	ID == ""           表示该操作同步完成，不需要 watch
@@ -100,6 +94,7 @@ type ListOpts struct {
 	ClusterID    string
 	Limit        int32
 	Skip         int32
+	InRecycleBin *bool // nil=不过滤, true=仅回收站, false=仅正常VM
 }
 
 // Task 是 CLI 内部用的任务视图。
@@ -268,6 +263,7 @@ type NicConfig struct {
 type VMCloneSpec struct {
 	Name            string
 	TargetClusterID string // 可选；空则同集群
+	Linked          bool  // true=linked clone, false=full clone
 }
 
 // VMExportSpec 是 vm.export 命令的参数。
@@ -414,4 +410,229 @@ const (
 type SessionToken struct {
 	Value    string
 	ExpireAt time.Time
+}
+
+// Label 是 CLI 内部用的标签视图。
+type Label struct {
+	ID        string
+	Key       string
+	Value     string
+	CreatedAt string
+}
+
+// LabelCreateSpec 是 label.create 命令的参数。
+type LabelCreateSpec struct {
+	Key   string
+	Value string
+}
+
+// LabelUpdateSpec 是 label.update 命令的参数。
+type LabelUpdateSpec struct {
+	Key   string
+	Value string
+}
+
+// LabelAttachSpec 是 label attach 命令的参数。
+type LabelAttachSpec struct {
+	ResourceKind string // vm, host, cluster, etc.
+	ResourceID   string
+}
+
+// LabelDetachSpec 是 label detach 命令的参数。
+type LabelDetachSpec struct {
+	ResourceKind string
+	ResourceID   string
+}
+
+// VMFolder 是 CLI 内部用的 VM 文件夹视图。
+type VMFolder struct {
+	ID        string
+	Name      string
+	ClusterID string
+}
+
+// VMFolderCreateSpec 是 vm.folder.create 命令的参数。
+type VMFolderCreateSpec struct {
+	Name      string
+	ClusterID string
+}
+
+// VMFolderUpdateSpec 是 vm.folder.update 命令的参数。
+type VMFolderUpdateSpec struct {
+	Name string
+}
+
+// VMPlacementGroup 是 CLI 内部用的 VM 放置组视图。
+type VMPlacementGroup struct {
+	ID        string
+	Name      string
+	ClusterID string
+}
+
+// VMPlacementGroupCreateSpec 是 vm.placement-group.create 命令的参数。
+type VMPlacementGroupCreateSpec struct {
+	Name      string
+	ClusterID string
+}
+
+// SnapshotPlan 是 CLI 内部用的快照计划视图。
+type SnapshotPlan struct {
+	ID               string
+	Name             string
+	ClusterID        string
+	Status           string
+	PlanType         string
+	Retention        int32
+	StartTime        string
+	EndTime          string
+	ExecHM           string
+	ExecuteIntervals []int32
+}
+
+// SnapshotPlanCreateSpec 是 snapshot.plan.create 命令的参数。
+type SnapshotPlanCreateSpec struct {
+	Name      string
+	ClusterID string
+	PlanType  string
+	Retention int32
+	StartTime string
+	EndTime   string
+	VMIDs     []string
+}
+
+// ElfStoragePolicy 是 CLI 内部用的存储策略视图。
+type ElfStoragePolicy struct {
+	ID           string
+	Name         string
+	Description string
+	ClusterID    string
+	ClusterName  string
+	LocalID      string
+	ReplicaNum   int32
+	StripeNum    int32
+	StripeSize   int64
+	ThinProvision bool
+}
+
+// GlobalSettings 是 CLI 内部用的全局设置视图。
+type GlobalSettings struct {
+	ID              string
+	SessionMaxAge   int32
+	VMRecycleBin    VMRecycleBinSetting
+}
+
+// VMRecycleBinSetting 是回收站设置视图。
+type VMRecycleBinSetting struct {
+	RetainPeriod int32
+	Enabled      bool
+}
+
+// UsbDevice 是 CLI 内部用的 USB 设备视图。
+type UsbDevice struct {
+	ID            string
+	Name          string
+	Description   string
+	LocalID       string
+	Manufacturer  string
+	Status        string
+	UsbType       string
+	Size          int64
+	Binded        bool
+	HostID        string
+	HostName      string
+	VMID          string
+	VMName        string
+	LocalCreatedAt string
+}
+
+// Application 是 CLI 内部用的应用视图。
+type Application struct {
+	ID         string
+	LocalID    string
+	ImageName  string
+	Memory     int64
+	State      string
+	StorageIP  string
+	ClusterID  string
+	ClusterName string
+	ErrorMessage string
+}
+
+// Deploy 是 CLI 内部用的部署视图。
+type Deploy struct {
+	ID        string
+	LocalID   string
+	VMID      string
+	VMName    string
+	State     string
+	StartedAt string
+}
+
+// License 是 CLI 内部用的许可证视图。
+type License struct {
+	ID                   string
+	ExpireDate           string
+	LicenseSerial        string
+	MaintenanceEndDate   string
+	MaintenanceStartDate string
+	MaxChunkNum          int32
+	MaxClusterNum        int32
+	SignDate             string
+	SoftwareEdition      string
+	Type                string
+}
+
+// ClusterSettings 是 CLI 内部用的集群设置视图。
+type ClusterSettings struct {
+	ID        string
+	ClusterID string
+}
+
+// NtpSettings 是 CLI 内部用的 NTP 设置视图。
+type NtpSettings struct {
+	URLs []string
+}
+
+// AlertRule 是 CLI 内部用的告警规则视图。
+type AlertRule struct {
+	ID          string
+	Name        string
+	Enabled     bool
+	Expression  string
+	Duration    int32
+	Severity    string
+	TargetKind  string
+	TargetID    string
+}
+
+// ContentLibraryImage 是 CLI 内部用的内容库镜像视图。
+type ContentLibraryImage struct {
+	ID          string
+	Name        string
+	Description string
+	Path        string
+	Size        int64
+	CreatedAt   string
+	ClusterIDs  []string
+	ClusterNames []string
+}
+
+// CloudTowerApplication 是 CLI 内部用的 CloudTower 应用视图。
+type CloudTowerApplication struct {
+	ID           string
+	Name         string
+	State        string
+	TargetPackage string
+	ResourceVersion int32
+	ClusterID    string
+	ClusterName  string
+}
+
+// CloudTowerApplicationPackage 是 CLI 内部用的 CloudTower 应用包视图。
+type CloudTowerApplicationPackage struct {
+	ID           string
+	Name         string
+	Version      string
+	Architecture string
+	ScosVersion  string
 }

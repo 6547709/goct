@@ -13,8 +13,9 @@ func newNicLs() *cobra.Command {
 	var vmID string
 	var idOnly bool
 	c := &cobra.Command{
-		Use:   "nic.ls",
-		Short: "List VM NICs",
+		Use:     "vm.nic.ls",
+		Short:   "List VM NICs",
+		GroupID: "vm",
 		Long: `List all network interfaces attached to a VM.
 Use --vm to specify the VM by name or ID.
 

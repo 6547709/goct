@@ -14,8 +14,9 @@ func newDiskLs() *cobra.Command {
 	var vmID string
 	var idOnly bool
 	c := &cobra.Command{
-		Use:   "disk.ls",
-		Short: "List VM disks",
+		Use:     "vm.disk.ls",
+		Short:   "List VM disks",
+		GroupID: "vm",
 		Long: `List all disks (including CD-ROMs) attached to a VM.
 Use --vm to specify the VM by name or ID.
 
@@ -57,8 +58,9 @@ Examples:
 func newDiskUpdate() *cobra.Command {
 	var diskID string
 	c := &cobra.Command{
-		Use:   "disk.update",
-		Short: "Update VM disk settings",
+		Use:     "vm.disk.update",
+		Short:   "Update VM disk settings",
+		GroupID: "vm",
 		Long: `Update a VM disk configuration.
 
 Examples:

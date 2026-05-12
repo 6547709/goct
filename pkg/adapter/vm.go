@@ -72,6 +72,10 @@ func (c *defaultClient) ListVMs(ctx context.Context, opts ListOpts) ([]VM, error
 		where.Cluster = &models.ClusterWhereInput{ID: pointy.String(opts.ClusterID)}
 		hasWhere = true
 	}
+	if opts.InRecycleBin != nil {
+		where.InRecycleBin = opts.InRecycleBin
+		hasWhere = true
+	}
 
 	body := &models.GetVmsRequestBody{}
 	if hasWhere {
@@ -182,8 +186,9 @@ func (c *defaultClient) CreateVM(ctx context.Context, spec VMCreateSpec) (TaskRe
 
 func (c *defaultClient) CloneVM(ctx context.Context, srcID string, spec VMCloneSpec) (TaskRef, error) {
 	p := &models.VMCloneParams{
-		SrcVMID: pointy.String(srcID),
-		Name:    pointy.String(spec.Name),
+		SrcVMID:    pointy.String(srcID),
+		Name:       pointy.String(spec.Name),
+		IsFullCopy: pointy.Bool(!spec.Linked), // Linked=false means IsFullCopy=true for full clone
 	}
 	if spec.TargetClusterID != "" {
 		p.ClusterID = pointy.String(spec.TargetClusterID)

@@ -9,8 +9,9 @@ import (
 
 func newHostMetrics() *cobra.Command {
 	c := &cobra.Command{
-		Use:   "host.metrics <metric> [host-name]",
-		Short: "Query Host metrics",
+		Use:     "host.metrics <metric> [host-name]",
+		Short:   "Query Host metrics",
+		GroupID: "metrics",
 		Long:  "Query Host metrics with optional host name filter. Example: host.metrics elf_host_cpu_usage host001",
 		Args: func(cmd *cobra.Command, args []string) error {
 			if listFlag {

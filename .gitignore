@@ -4,6 +4,8 @@ dist/
 goct
 goct.exe
 
+!/skills/
+
 # Coverage
 coverage.out
 *.test

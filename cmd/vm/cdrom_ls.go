@@ -13,8 +13,9 @@ import (
 func newCdRomLs() *cobra.Command {
 	var vmID string
 	c := &cobra.Command{
-		Use:   "cdrom.ls",
-		Short: "List VM CD-ROMs",
+		Use:     "vm.cdrom.ls",
+		Short:   "List VM CD-ROMs",
+		GroupID: "vm",
 		Long: `List all CD-ROM devices attached to a VM.
 Use --vm to specify the VM by name or ID.
 
@@ -55,8 +56,9 @@ Examples:
 func newCdRomToggle() *cobra.Command {
 	var disabled bool
 	c := &cobra.Command{
-		Use:   "cdrom.toggle [cdrom-id]",
-		Short: "Enable or disable a CD-ROM",
+		Use:     "vm.cdrom.toggle [cdrom-id]",
+		Short:   "Enable or disable a CD-ROM",
+		GroupID: "vm",
 		Long: `Enable or disable a CD-ROM device.
 
 Examples:

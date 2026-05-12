@@ -12,8 +12,9 @@ import (
 func newGpuLs() *cobra.Command {
 	var vmID string
 	c := &cobra.Command{
-		Use:   "gpu.ls",
-		Short: "List VM GPU devices",
+		Use:     "vm.gpu.ls",
+		Short:   "List VM GPU devices",
+		GroupID: "vm",
 		Long: `List all GPU devices attached to a VM.
 Use --vm to specify the VM by name or ID.
 

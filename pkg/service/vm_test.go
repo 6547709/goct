@@ -307,6 +307,121 @@ func (f *fakeClient) GetClusterMetrics(_ context.Context, _ *models.GetClusterMe
 	return nil, nil
 }
 
+func (f *fakeClient) ListLabels(_ context.Context, _ adapter.ListOpts) ([]adapter.Label, error) {
+	return nil, nil
+}
+func (f *fakeClient) CreateLabel(_ context.Context, _ adapter.LabelCreateSpec) ([]adapter.Label, error) {
+	return nil, nil
+}
+func (f *fakeClient) UpdateLabel(_ context.Context, _ string, _ adapter.LabelUpdateSpec) ([]adapter.Label, error) {
+	return nil, nil
+}
+func (f *fakeClient) DeleteLabel(_ context.Context, _ string) error {
+	return nil
+}
+func (f *fakeClient) AttachLabel(_ context.Context, _ string, _ adapter.LabelAttachSpec) error {
+	return nil
+}
+func (f *fakeClient) DetachLabel(_ context.Context, _ string, _ adapter.LabelDetachSpec) error {
+	return nil
+}
+func (f *fakeClient) DeleteContentLibraryTemplate(_ context.Context, _ string) error {
+	return nil
+}
+func (f *fakeClient) ListVMFolders(_ context.Context, _ adapter.ListOpts) ([]adapter.VMFolder, error) {
+	return nil, nil
+}
+func (f *fakeClient) CreateVMFolder(_ context.Context, _ adapter.VMFolderCreateSpec) ([]adapter.VMFolder, error) {
+	return nil, nil
+}
+func (f *fakeClient) UpdateVMFolder(_ context.Context, _ string, _ adapter.VMFolderUpdateSpec) ([]adapter.VMFolder, error) {
+	return nil, nil
+}
+func (f *fakeClient) DeleteVMFolder(_ context.Context, _ string) error {
+	return nil
+}
+func (f *fakeClient) ListVMPlacementGroups(_ context.Context, _ adapter.ListOpts) ([]adapter.VMPlacementGroup, error) {
+	return nil, nil
+}
+func (f *fakeClient) CreateVMPlacementGroup(_ context.Context, _ adapter.VMPlacementGroupCreateSpec) ([]adapter.VMPlacementGroup, error) {
+	return nil, nil
+}
+func (f *fakeClient) DeleteVMPlacementGroup(_ context.Context, _ string) error {
+	return nil
+}
+func (f *fakeClient) ListSnapshotPlans(_ context.Context, _ adapter.ListOpts) ([]adapter.SnapshotPlan, error) {
+	return nil, nil
+}
+func (f *fakeClient) DeleteSnapshotPlan(_ context.Context, _ string) error {
+	return nil
+}
+func (f *fakeClient) ListElfStoragePolicies(_ context.Context, _ adapter.ListOpts) ([]adapter.ElfStoragePolicy, error) {
+	return nil, nil
+}
+func (f *fakeClient) GetGlobalSettings(_ context.Context) (*adapter.GlobalSettings, error) {
+	return nil, nil
+}
+func (f *fakeClient) UpdateSessionTimeout(_ context.Context, _ int32) error {
+	return nil
+}
+func (f *fakeClient) ListUsbDevices(_ context.Context, _ adapter.ListOpts) ([]adapter.UsbDevice, error) {
+	return nil, nil
+}
+func (f *fakeClient) MountUsbDevice(_ context.Context, _, _ string) (adapter.TaskRef, error) {
+	return adapter.TaskRef{ID: "task-usb-mount"}, nil
+}
+func (f *fakeClient) UnmountUsbDevice(_ context.Context, _ string) (adapter.TaskRef, error) {
+	return adapter.TaskRef{ID: "task-usb-unmount"}, nil
+}
+func (f *fakeClient) ListApplications(_ context.Context, _ adapter.ListOpts) ([]adapter.Application, error) {
+	return nil, nil
+}
+func (f *fakeClient) ListDeploys(_ context.Context, _ adapter.ListOpts) ([]adapter.Deploy, error) {
+	return nil, nil
+}
+func (f *fakeClient) ListLicenses(_ context.Context, _ adapter.ListOpts) ([]adapter.License, error) {
+	return nil, nil
+}
+func (f *fakeClient) UpdateDeploy(_ context.Context, _ string) (adapter.TaskRef, error) {
+	return adapter.TaskRef{ID: "task-license-update"}, nil
+}
+func (f *fakeClient) GetClusterSettings(_ context.Context, _ string) (*adapter.ClusterSettings, error) {
+	return nil, nil
+}
+func (f *fakeClient) GetNtpServiceURL(_ context.Context) (*adapter.NtpSettings, error) {
+	return nil, nil
+}
+func (f *fakeClient) ListAlertRules(_ context.Context, _ adapter.ListOpts) ([]adapter.AlertRule, error) {
+	return nil, nil
+}
+func (f *fakeClient) ListContentLibraryImages(_ context.Context, _ adapter.ListOpts) ([]adapter.ContentLibraryImage, error) {
+	return nil, nil
+}
+func (f *fakeClient) DeleteContentLibraryImage(_ context.Context, _ string) error {
+	return nil
+}
+func (f *fakeClient) ImportContentLibraryImage(_ context.Context, _, _, _ string) (adapter.TaskRef, error) {
+	return adapter.TaskRef{ID: "task-image-import"}, nil
+}
+func (f *fakeClient) DistributeContentLibraryImage(_ context.Context, _ string, _ []string) (adapter.TaskRef, error) {
+	return adapter.TaskRef{ID: "task-image-distribute"}, nil
+}
+func (f *fakeClient) ListCloudTowerApplications(_ context.Context, _ adapter.ListOpts) ([]adapter.CloudTowerApplication, error) {
+	return nil, nil
+}
+func (f *fakeClient) ListCloudTowerApplicationPackages(_ context.Context, _ adapter.ListOpts) ([]adapter.CloudTowerApplicationPackage, error) {
+	return nil, nil
+}
+func (f *fakeClient) UploadCloudTowerApplicationPackage(_ context.Context, _, _ string) (adapter.TaskRef, error) {
+	return adapter.TaskRef{ID: "task-upload"}, nil
+}
+func (f *fakeClient) DeleteCloudTowerApplicationPackage(_ context.Context, _ string) error {
+	return nil
+}
+func (f *fakeClient) DeployCloudTowerApplication(_ context.Context, _, _ string, _ *models.ApplicationVMSpecDefinition) (adapter.TaskRef, error) {
+	return adapter.TaskRef{ID: "task-deploy"}, nil
+}
+
 func newFakeClient() *fakeClient {
 	return &fakeClient{
 		vms: []adapter.VM{

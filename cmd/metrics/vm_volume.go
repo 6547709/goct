@@ -9,8 +9,9 @@ import (
 
 func newVmVolumeMetrics() *cobra.Command {
 	c := &cobra.Command{
-		Use:   "vm.volume <metric> [vm-name]",
-		Short: "Query VM volume metrics (elf_vm_disk_overall_*)",
+		Use:     "vm.volume <metric> [vm-name]",
+		Short:   "Query VM volume metrics (elf_vm_disk_overall_*)",
+		GroupID: "metrics",
 		Long:  "Query VM volume metrics by VM name. Metrics: elf_vm_disk_overall_logical_size_bytes, elf_vm_disk_overall_read_iops, etc. Example: vm.volume elf_vm_disk_overall_logical_size_bytes my-vm",
 		Args: func(cmd *cobra.Command, args []string) error {
 			if listFlag {

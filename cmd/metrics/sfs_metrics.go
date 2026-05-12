@@ -8,8 +8,9 @@ import (
 
 func newSFSMetrics() *cobra.Command {
 	c := &cobra.Command{
-		Use:   "sfs.metrics <metric> [sfs-name]",
-		Short: "Query SFS metrics (TODO: not yet implemented)",
+		Use:     "sfs.metrics <metric> [sfs-name]",
+		Short:   "Query SFS metrics (TODO: not yet implemented)",
+		GroupID: "metrics",
 		Long:  "Query SFS metrics. This feature is not yet available in the CloudTower SDK.",
 		Args: func(cmd *cobra.Command, args []string) error {
 			if listFlag {

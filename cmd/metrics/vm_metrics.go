@@ -9,8 +9,9 @@ import (
 
 func newVMMetrics() *cobra.Command {
 	c := &cobra.Command{
-		Use:   "vm.metrics <metric> [vm-name]",
-		Short: "Query VM metrics (elf_*)",
+		Use:     "vm.metrics <metric> [vm-name]",
+		Short:   "Query VM metrics (elf_*)",
+		GroupID: "metrics",
 		Long:  "Query VM metrics with optional VM name filter. Example: vm.metrics elf_cpu_usage vm001",
 		Args: func(cmd *cobra.Command, args []string) error {
 			if listFlag {

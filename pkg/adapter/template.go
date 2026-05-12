@@ -13,6 +13,7 @@ import (
 type TemplateOps interface {
 	ListContentLibraryTemplates(ctx context.Context, opts ListOpts) ([]ContentLibraryTemplate, error)
 	GetContentLibraryTemplateByName(ctx context.Context, name string) (*ContentLibraryTemplate, error)
+	DeleteContentLibraryTemplate(ctx context.Context, id string) error
 }
 
 // ContentLibraryTemplate 是 CLI 内部用的内容库模板视图。
@@ -69,6 +70,19 @@ func (c *defaultClient) GetContentLibraryTemplateByName(ctx context.Context, nam
 	}
 	t := toContentLibraryTemplate(resp.Payload[0])
 	return &t, nil
+}
+
+func (c *defaultClient) DeleteContentLibraryTemplate(ctx context.Context, id string) error {
+	params := content_library_vm_template.NewDeleteContentLibraryVMTemplateParams()
+	params.SetContext(ctx)
+	params.SetRequestBody(&models.ContentLibraryVMTemplateDeletionParams{
+		Where: &models.ContentLibraryVMTemplateWhereInput{ID: &id},
+	})
+	_, err := c.api.ContentLibraryVMTemplate.DeleteContentLibraryVMTemplate(params)
+	if err != nil {
+		return fmt.Errorf("delete content library template: %w", err)
+	}
+	return nil
 }
 
 func toContentLibraryTemplate(t *models.ContentLibraryVMTemplate) ContentLibraryTemplate {

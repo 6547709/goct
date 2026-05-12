@@ -20,7 +20,7 @@
 |------------|------|-----------|------|
 | **vm** | 虚拟机完整操作 | ⚠️ 部分 | 核心 VM 操作 |
 | → vm.create | 创建 VM | ✅ | |
-| → vm.clone | 克隆 VM | ⚠️ | 缺 linked clone (IsFullCopy) |
+| → vm.clone | 克隆 VM | ✅ | 支持 linked clone (--linked) |
 | → vm.destroy | 删除 VM | ✅ | |
 | → vm.power | 电源操作 | ✅ | on/off/reset/suspend/resume |
 | → vm.migrate | 迁移 | ✅ | 本集群迁移 |
@@ -71,6 +71,14 @@
 | → host.autostart.* | 自动启动 | ❌ | **未实现** |
 | → host.date.* | 日期时间 | ❌ | **未实现** |
 | → host.portgroup.* | 端口组 | ❌ | **未实现** |
+| **global_settings** | 全局设置 | ✅ | |
+| → settings.ls | 查看设置 | ✅ | |
+| → settings.update_timeout | 更新超时 | ✅ | |
+| **usb_device** | USB 设备 | ✅ | |
+| → usb.ls | 列表 USB 设备 | ✅ | |
+| → usb.mount | 挂载 USB 设备 | ✅ | |
+| → usb.unmount | 卸载 USB 设备 | ✅ | |
+| **elf_storage_policy** | 存储策略 | ✅ | 仅列表 |
 | **cluster** | 集群操作 | ⚠️ 部分 | |
 | → cluster.ls | 列表集群 | ✅ | |
 | → cluster.info | 集群详情 | ✅ | |
@@ -89,11 +97,19 @@
 | → snapshot.delete | 删除快照 | ✅ | |
 | → snapshot.revert | 恢复到快照 | ✅ | |
 | → snapshot.ls | 列表快照 | ✅ | |
-| → snapshot.tree | 快照树视图 | ❌ | **未实现** |
-| → snapshot.export | 导出快照 | ❌ | **未实现** |
+| **snapshot_plan** | 快照计划 | ✅ | |
+| → snapshot.plan.ls | 列表计划 | ✅ | |
+| → snapshot.plan.rm | 删除计划 | ✅ | |
 | **vm_template** | VM 模板 | ❌ | **未实现** |
-| **vm_folder** | VM 文件夹 | ❌ | **未实现** |
-| **vm_placement_group** | VM 放置组 | ❌ | **未实现** |
+| **vm_folder** | VM 文件夹 | ✅ | |
+| → vm.folder.ls | 列表文件夹 | ✅ | |
+| → vm.folder.create | 创建文件夹 | ✅ | |
+| → vm.folder.update | 更新文件夹 | ✅ | |
+| → vm.folder.rm | 删除文件夹 | ✅ | |
+| **vm_placement_group** | VM 放置组 | ✅ | |
+| → vm.placement-group.ls | 列表放置组 | ✅ | |
+| → vm.placement-group.create | 创建放置组 | ✅ | |
+| → vm.placement-group.rm | 删除放置组 | ✅ | |
 
 ### 存储资源
 
@@ -120,8 +136,8 @@
 | → disk.rdm.* | RDM 映射 | ❌ | **未实现** |
 | **disk_pool** | 超融合存储池 | ✅ | |
 | → storage.pool.ls | 列表存储池 | ✅ | |
-| **elf_storage_policy** | 存储策略 | ❌ | **未实现** |
-| **snapshot_plan** | 快照计划 | ❌ | **未实现** |
+| **elf_storage_policy** | 存储策略 | ✅ | 仅列表 |
+| **snapshot_plan** | 快照计划 | ✅ | |
 | **backup_plan** | 备份计划 | ❌ | **未实现** |
 | **backup_restore** | 备份恢复 | ❌ | **未实现** |
 | **iscsi_target** | iSCSI 目标 | ❌ | **未实现** |
@@ -182,8 +198,9 @@
 
 | SDK Client | 功能 | goct 状态 | 说明 |
 |------------|------|-----------|------|
-| **content_library_vm_template** | 内容库模板 | ⚠️ 部分 | |
-| → template.ls | 列表模板 | ⚠️ | 仅 List，无 create/delete |
+| **content_library_vm_template** | 内容库模板 | ✅ | |
+| → template.ls | 列表模板 | ✅ | |
+| → template.rm | 删除模板 | ✅ | |
 | → vm.create --from-template | 从模板创建 VM | ✅ | |
 | **content_library_image** | 内容库镜像 | ❌ | **未实现** |
 | **elf_image** | ELF 镜像 | ❌ | **未实现** |
@@ -197,13 +214,13 @@
 
 | SDK Client | 功能 | goct 状态 | 说明 |
 |------------|------|-----------|------|
-| **label** | 标签管理 | ❌ | **未实现** |
-| → label.create | 创建标签 | ❌ | |
-| → label.delete | 删除标签 | ❌ | |
-| → label.update | 更新标签 | ❌ | |
-| → label.get | 获取标签 | ❌ | |
-| → label.add_to_resources | 添加到资源 | ❌ | |
-| → label.remove_from_resources | 从资源移除 | ❌ | |
+| **label** | 标签管理 | ✅ | |
+| → label.create | 创建标签 | ✅ | |
+| → label.delete | 删除标签 | ✅ | |
+| → label.update | 更新标签 | ✅ | |
+| → label.get/ls | 获取标签 | ✅ | |
+| → label.attach | 附加到资源 | ✅ | |
+| → label.detach | 从资源移除 | ✅ | |
 | **entity_filter** | 实体过滤器 | ❌ | **未实现** |
 | **vm_entity_filter_result** | 过滤结果 | ❌ | **未实现** |
 
@@ -214,7 +231,7 @@
 | **recycle_bin** | 回收站 | ⚠️ 部分 | |
 | → vm.recycle | 移入回收站 | ✅ | |
 | → vm.recover | 从回收站恢复 | ✅ | |
-| → vm.ls (--recycle) | 回收站列表 | ❌ | **未实现** (需要过滤) |
+| → vm.ls (--recycle) | 回收站列表 | ✅ | 已实现 |
 | **global_settings** | 全局设置 | ❌ | **未实现** |
 | → recycle_bin_setting | 回收站设置 | ❌ | **未实现** |
 | → global_recycle_bin_setting | 全局回收站设置 | ❌ | **未实现** |

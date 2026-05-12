@@ -9,8 +9,9 @@ import (
 
 func newVolumeMetrics() *cobra.Command {
 	c := &cobra.Command{
-		Use:   "volume.metrics <metric> [volume-name]",
-		Short: "Query Volume metrics",
+		Use:     "volume.metrics <metric> [volume-name]",
+		Short:   "Query Volume metrics",
+		GroupID: "metrics",
 		Long:  "Query independent volume metrics with optional volume name filter. Example: volume.metrics zbs_volume_read_iops volume001",
 		Args: func(cmd *cobra.Command, args []string) error {
 			if listFlag {

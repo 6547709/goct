@@ -16,8 +16,9 @@ func newPoolLs() *cobra.Command {
 	var cluster string
 	var idOnly bool
 	c := &cobra.Command{
-		Use:   "storage.pool.ls",
-		Short: "List hyperconverged storage pools (DiskPool)",
+		Use:     "storage.pool.ls",
+		Short:   "List hyperconverged storage pools (DiskPool)",
+		GroupID: "datastore",
 		Long: `List DiskPools - the hyperconverged storage pools on each host.
 Each host has one DiskPool that aggregates all local disks into a distributed storage pool.
 

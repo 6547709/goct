@@ -8,12 +8,14 @@ import (
 	gflags "github.com/6547709/goct/pkg/flags"
 	"github.com/6547709/goct/pkg/output"
 	"github.com/6547709/goct/pkg/service"
+	"github.com/openlyinc/pointy"
 	"github.com/spf13/cobra"
 )
 
 func newLs() *cobra.Command {
 	var sf gflags.SearchFlags
 	var idOnly bool
+	var recycle bool
 	c := &cobra.Command{
 		Use:   "vm.ls",
 		Short: "List virtual machines",
@@ -23,12 +25,17 @@ Script-friendly: use --id-only to output only IDs (one per line),
 then pipe to other commands:
 
   goct vm.ls --name web --id-only | xargs -I{} goct vm.info {}
-  goct vm.ls --id-only | head -1 | xargs goct vm.power.on`,
+  goct vm.ls --id-only | head -1 | xargs goct vm.power.on
+
+Use --recycle to show VMs in recycle bin.`,
 		GroupID: groupID,
 		RunE: func(c *cobra.Command, _ []string) error {
 			cli := client.From(c.Context())
-			vms, err := service.NewVM(cli).List(c.Context(),
-				adapter.ListOpts{NameContains: sf.Name, Limit: sf.Limit, Skip: sf.Skip})
+			opts := adapter.ListOpts{NameContains: sf.Name, Limit: sf.Limit, Skip: sf.Skip}
+			if recycle {
+				opts.InRecycleBin = pointy.Bool(true)
+			}
+			vms, err := service.NewVM(cli).List(c.Context(), opts)
 			if err != nil {
 				return err
 			}
@@ -48,5 +55,6 @@ then pipe to other commands:
 	}
 	sf.Register(c)
 	c.Flags().BoolVar(&idOnly, "id-only", false, "Output only IDs, one per line (for scripting)")
+	c.Flags().BoolVar(&recycle, "recycle", false, "Show VMs in recycle bin")
 	return c
 }

@@ -9,8 +9,9 @@ import (
 
 func newClusterMetrics() *cobra.Command {
 	c := &cobra.Command{
-		Use:   "cluster.metrics <metric> [cluster-name]",
-		Short: "Query Cluster metrics (zbs_cluster_*)",
+		Use:     "cluster.metrics <metric> [cluster-name]",
+		Short:   "Query Cluster metrics (zbs_cluster_*)",
+		GroupID: "metrics",
 		Long:  "Query Cluster metrics with optional cluster name filter. Example: cluster.metrics zbs_cluster_usage cluster001",
 		Args: func(cmd *cobra.Command, args []string) error {
 			if listFlag {

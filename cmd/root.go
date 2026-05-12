@@ -8,11 +8,18 @@ import (
 	"os"
 
 	"github.com/6547709/goct/cmd/alert"
+	"github.com/6547709/goct/cmd/alert_rule"
+	"github.com/6547709/goct/cmd/application"
 	"github.com/6547709/goct/cmd/cluster"
+	"github.com/6547709/goct/cmd/cluster_settings"
+	"github.com/6547709/goct/cmd/content_library_image"
 	"github.com/6547709/goct/cmd/datastore"
+	"github.com/6547709/goct/cmd/deploy"
 	"github.com/6547709/goct/cmd/host"
+	"github.com/6547709/goct/cmd/license"
 	"github.com/6547709/goct/cmd/metrics"
 	"github.com/6547709/goct/cmd/network"
+	"github.com/6547709/goct/cmd/ntp"
 	"github.com/6547709/goct/cmd/system"
 	"github.com/6547709/goct/cmd/task"
 	"github.com/6547709/goct/cmd/user"
@@ -79,6 +86,8 @@ func init() {
 
 	rootCmd.AddGroup(
 		&cobra.Group{ID: "system", Title: "System:"},
+		&cobra.Group{ID: "application", Title: "Applications:"},
+		&cobra.Group{ID: "content_library_image", Title: "Content Library:"},
 		&cobra.Group{ID: "vm", Title: "Virtual Machines:"},
 		&cobra.Group{ID: "host", Title: "Hosts:"},
 		&cobra.Group{ID: "cluster", Title: "Clusters:"},
@@ -91,10 +100,17 @@ func init() {
 	)
 
 	alert.Register(rootCmd)
+	alert_rule.Register(rootCmd)
+	application.Register(rootCmd)
 	cluster.Register(rootCmd)
+	cluster_settings.Register(rootCmd)
+	content_library_image.Register(rootCmd)
 	datastore.Register(rootCmd)
+	deploy.Register(rootCmd)
 	host.Register(rootCmd)
+	license.Register(rootCmd)
 	network.Register(rootCmd)
+	ntp.Register(rootCmd)
 	system.Register(rootCmd)
 	task.Register(rootCmd)
 	user.Register(rootCmd)
