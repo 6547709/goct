@@ -13,6 +13,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"net/url"
 
 	"github.com/6547709/goct/pkg/adapter"
@@ -24,7 +25,8 @@ import (
 // New 按"命中 cache → 否则登录 → 写回 cache"流程构造 adapter.Client。
 //
 // cfg.URL 必须存在；cfg.Username 仅在没有缓存或缓存失效时使用。
-func New(ctx context.Context, cfg config.Resolved) (adapter.Client, error) {
+// transport 不为空时作为 http.RoundTripper 注入 adapter，用于跟踪请求。
+func New(ctx context.Context, cfg config.Resolved, transport http.RoundTripper) (adapter.Client, error) {
 	if cfg.URL == "" {
 		return nil, errors.New("missing --url / GOCT_URL / config 'url'")
 	}
@@ -38,6 +40,7 @@ func New(ctx context.Context, cfg config.Resolved) (adapter.Client, error) {
 				URL:      cfg.URL,
 				Insecure: cfg.Insecure,
 				Token:    tok.Value,
+				Transport: transport,
 			})
 			if e == nil {
 				return c, nil
@@ -58,6 +61,7 @@ func New(ctx context.Context, cfg config.Resolved) (adapter.Client, error) {
 		Password: cfg.Password,
 		Source:   cfg.Source,
 		Insecure: cfg.Insecure,
+		Transport: transport,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("login %s: %w", cfg.URL, err)

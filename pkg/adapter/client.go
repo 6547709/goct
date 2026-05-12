@@ -53,13 +53,15 @@ type Client interface {
 //	Source       登录源（local/ldap/sso/authn），缺省 local
 //	Insecure     true 跳过 TLS 校验（自签名内网用）
 //	Token        非空时跳过登录直接复用（session 命中场景）
+//	Transport    可选自定义 http.RoundTripper，优先级高于 insecure 设置
 type Options struct {
-	URL      string
-	Username string
-	Password string
-	Source   string
-	Insecure bool
-	Token    string
+	URL       string
+	Username  string
+	Password  string
+	Source    string
+	Insecure  bool
+	Token     string
+	Transport http.RoundTripper
 }
 
 // defaultClient 是 Client 的默认实现。
@@ -82,7 +84,7 @@ func NewClient(_ context.Context, opts Options) (Client, SessionToken, error) {
 		return nil, SessionToken{}, err
 	}
 	debug.Debugf("adapter: connecting to %s (basePath=%s, insecure=%v)", host, basePath, opts.Insecure)
-	tr := newTransport(host, basePath, schemes, opts.Insecure)
+	tr := newTransport(host, basePath, schemes, opts.Insecure, opts.Transport)
 
 	if opts.Token != "" {
 		debug.Debug("adapter: reusing cached token (skip login)")
@@ -140,16 +142,18 @@ func login(api *apiclient.Cloudtower, tr *httptransport.Runtime, opts Options) (
 }
 
 // newTransport 构造 OpenAPI runtime；insecure=true 时跳过 TLS 校验。
-func newTransport(host, basePath string, schemes []string, insecure bool) *httptransport.Runtime {
+// customTransport 不为空时替换默认 transport。
+func newTransport(host, basePath string, schemes []string, insecure bool, customTransport http.RoundTripper) *httptransport.Runtime {
+	hc := &http.Client{}
 	if insecure {
-		hc := &http.Client{
-			Transport: &http.Transport{
-				TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, // #nosec G402 — 内网自签名场景显式启用
-			},
+		hc.Transport = &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, // #nosec G402 — 内网自签名场景显式启用
 		}
-		return httptransport.NewWithClient(host, basePath, schemes, hc)
 	}
-	return httptransport.New(host, basePath, schemes)
+	if customTransport != nil {
+		hc.Transport = customTransport
+	}
+	return httptransport.NewWithClient(host, basePath, schemes, hc)
 }
 
 // splitURL 解析用户传入的 endpoint，返回 OpenAPI runtime 需要的三元组。

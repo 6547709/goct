@@ -29,7 +29,7 @@ func TestNew_LoginAndCache(t *testing.T) {
 
 	c, err := client.New(context.Background(), config.Resolved{
 		URL: srv.URL, Username: "u", Password: "p", Insecure: true,
-	})
+	}, nil)
 	if err != nil {
 		t.Fatalf("New err=%v", err)
 	}
@@ -50,7 +50,7 @@ func TestNew_LoginAndCache(t *testing.T) {
 // TestNew_MissingURL 验证缺少 URL 立即报错。
 func TestNew_MissingURL(t *testing.T) {
 	t.Setenv("XDG_CACHE_HOME", t.TempDir())
-	if _, err := client.New(context.Background(), config.Resolved{}); err == nil {
+	if _, err := client.New(context.Background(), config.Resolved{}, nil); err == nil {
 		t.Fatal("expected error when URL missing")
 	}
 }
@@ -60,7 +60,7 @@ func TestNew_MissingCredentials(t *testing.T) {
 	t.Setenv("XDG_CACHE_HOME", t.TempDir())
 	if _, err := client.New(context.Background(), config.Resolved{
 		URL: "https://tower.example.com",
-	}); err == nil {
+	}, nil); err == nil {
 		t.Fatal("expected error when credentials missing")
 	}
 }
