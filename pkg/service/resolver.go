@@ -17,8 +17,8 @@ import (
 // uuidRe 匹配标准 UUID（36 字符）。
 var uuidRe = regexp.MustCompile(`^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$`)
 
-// cuidRe 匹配 CloudTower cuid 格式（以 cl 开头，25-27 字符字母数字）。
-var cuidRe = regexp.MustCompile(`^cl[0-9a-z]{23,25}$`)
+// cuidRe 匹配 CloudTower cuid 格式（2 个小写字母 + 23-25 个字母数字，共 25-27 字符）。
+var cuidRe = regexp.MustCompile(`^[a-z]{2}[0-9a-z]{23,25}$`)
 
 // IsID 报告 s 是否看起来像一个 ID（UUID 或 cuid），而非用户可读的名称。
 // CloudTower 同时使用两种 ID 格式：
