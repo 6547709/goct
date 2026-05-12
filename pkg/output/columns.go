@@ -292,6 +292,7 @@ func VMInfoRows(v adapter.VM) [][]string {
 		{"Memory", HumanBytes(v.MemoryBytes)},
 		{"Firmware", v.Firmware},
 		{"Guest OS", v.GuestOS},
+		{"OS", v.OS},
 		{"HA", haStr},
 		{"IPs", strings.Join(ips, ", ")},
 		{"Hostname", hostname},

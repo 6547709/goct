@@ -800,6 +800,9 @@ func toVM(v *models.VM) VM {
 	if v.GuestOsType != nil {
 		out.GuestOS = string(*v.GuestOsType)
 	}
+	if v.Os != nil {
+		out.OS = *v.Os
+	}
 	if v.VMToolsStatus != nil {
 		out.VMToolsStatus = string(*v.VMToolsStatus)
 	}

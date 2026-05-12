@@ -34,7 +34,8 @@ type VM struct {
 	MemoryBytes     uint64
 	Firmware        string // BIOS / UEFI
 	Ha              bool
-	GuestOS         string // LINUX / WINDOWS / UNKNOWN
+	GuestOS         string // LINUX / WINDOWS / UNKNOWN (guest_os_type enum)
+	OS              string // Actual OS name, e.g. "Ubuntu 22.04" (from os field)
 	VMToolsStatus   string // RUNNING / NOT_RUNNING / NOT_INSTALLED / RESTRICTION
 	VMToolsVersion  string
 	CPUModel        string
