@@ -89,8 +89,12 @@ func (r TaskRef) IsSync() bool { return r.ID == "" }
 
 // ListOpts 是 list 类操作的统一过滤条件。
 // 各 sub-interface 根据自身能力可忽略不支持的字段。
+//
+// Name 与 NameContains 互斥：Name 走精确匹配（比 NameContains 更高效，避免大列表），
+// 同时存在时优先 Name。
 type ListOpts struct {
-	NameContains string
+	Name         string // 精确匹配，服务端走 = 过滤
+	NameContains string // 模糊匹配，服务端走 contains 过滤
 	ClusterID    string
 	Limit        int32
 	Skip         int32
@@ -229,6 +233,12 @@ type Snapshot struct {
 }
 
 // VMCreateSpec 是 vm.create 命令需要的参数集合。
+//
+// Disks/Nics 为空时，adapter 不会下发任何默认磁盘/网卡（v0.2.1 之前会强制塞 10 GB SCSI 磁盘 +
+// 无 VLAN 的 VIRTIO 网卡，导致 CloudTower 拒绝或行为不可控）。
+// 由 cmd / service 层根据用户传入的 --disk / --nic 显式构造。
+//
+// HA 为 nil 时不下发该字段（用 CloudTower 的默认值）；显式 *bool 区分"未指定"与"显式关闭"。
 type VMCreateSpec struct {
 	Name        string
 	ClusterID   string
@@ -236,6 +246,9 @@ type VMCreateSpec struct {
 	MemoryBytes int64  // bytes
 	Firmware    string // BIOS / UEFI, default BIOS
 	Description string
+	HA          *bool
+	Disks       []DiskAddSpec
+	Nics        []NicAddSpec
 }
 
 // VMCreateFromTemplateSpec 是 vm.create --from-template 命令的参数集合。
@@ -273,9 +286,15 @@ type VMExportSpec struct {
 }
 
 // VMUpdateSpec 是 vm.update 命令的参数。
+//
+// 字段语义（v0.2.1 修复）：
+//   - nil  → 不下发该字段（保持原值）
+//   - 非 nil（含空字符串）→ 显式下发，允许把 description 清空为 ""
+//
+// 之前用 string + `if != "" { set }`，导致用户没办法把 description 清空。
 type VMUpdateSpec struct {
-	Name        string
-	Description string
+	Name        *string
+	Description *string
 }
 
 // DiskAddSpec 是 vm disk.add 命令的参数。
@@ -320,7 +339,10 @@ type VMNic struct {
 }
 
 // VMNicUpdateSpec 是 vm nic.update 命令的参数。
+//
+// VMID（v0.2.1 新增）：CloudTower update-vm-nic API 要求 Where 指向 VM。
 type VMNicUpdateSpec struct {
+	VMID          string
 	NicIndex      int32
 	ConnectVlanID string
 	Enabled       *bool
@@ -349,7 +371,24 @@ type VMDisk struct {
 }
 
 // DiskUpdateSpec 是 vm disk.update 命令的参数。
+//
+// 注意：CloudTower 的 update-vm-disk API（VMUpdateDiskParamsData）只支持下列字段：
+//   - bus
+//   - vm_volume_id（替换底层 volume）
+//   - elf_image_id / content_library_image_id（CD-ROM 换 ISO 用）
+//
+// 不支持 size / iops / bandwidth 在线修改：扩容请用 vm.disk.expand，
+// QoS 请用 vm.disk QoS 专用 API（SDK v2.22.1 暂未导出）。
+//
+// VMID 必填：CloudTower 的 update-vm-disk 用 VM 维度的 Where 过滤。
 type DiskUpdateSpec struct {
+	VMID                  string
+	Bus                   string // SCSI / IDE / VIRTIO；空表示不改
+	VMVolumeID            string // 替换底层 volume；空表示不改
+	ElfImageID            string // 替换 ISO；空表示不改
+	ContentLibraryImageID string // 替换内容库镜像；空表示不改
+
+	// 保留字段：CLI 历史 flag 兼容，当前 SDK 不支持，传入会被忽略并打 warning。
 	MaxBandwidth *int64
 	MaxIops      *int64
 }

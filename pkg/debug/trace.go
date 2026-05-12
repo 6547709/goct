@@ -38,6 +38,16 @@ func NewTraceRoundTripper(base http.RoundTripper, level TraceLevel, output io.Wr
 	}
 }
 
+// SetBase 由 adapter.newTransport 在装配链路时回填底层 transport，
+// 使得 `--trace --insecure` 同开时 trace 包装的仍然是跳过 TLS 校验的 transport。
+// nil 入参不会清空已有 Base，避免误覆盖。
+func (t *TraceRoundTripper) SetBase(base http.RoundTripper) {
+	if base == nil {
+		return
+	}
+	t.Base = base
+}
+
 // RoundTrip 实现 http.RoundTripper 接口。
 func (t *TraceRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	start := time.Now()

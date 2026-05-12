@@ -112,17 +112,19 @@ Examples:
 }
 
 func newConvertToVM() *cobra.Command {
+	var newName string
 	c := &cobra.Command{
 		Use:   "convert-to-vm [template-name|template-id]",
 		Short: "Convert template to VM",
 		Long: `Convert a content library template to a virtual machine.
 
 Examples:
-  goct vm convert-to-vm my-template`,
+  goct vm convert-to-vm my-template
+  goct vm convert-to-vm my-template --name my-new-vm`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(c *cobra.Command, args []string) error {
 			cli := client.From(c.Context())
-			ref, err := service.NewVM(cli).ConvertToVM(c.Context(), args[0])
+			ref, err := service.NewVM(cli).ConvertToVM(c.Context(), args[0], newName)
 			if err != nil {
 				return err
 			}
@@ -134,5 +136,6 @@ Examples:
 			return nil
 		},
 	}
+	c.Flags().StringVar(&newName, "name", "", "Name for the converted VM (default: <template>-vm)")
 	return c
 }

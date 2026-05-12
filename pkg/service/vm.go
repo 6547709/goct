@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"fmt"
-	"math/rand"
 
 	"github.com/6547709/goct/pkg/adapter"
 )
@@ -68,41 +67,34 @@ func (s *VMService) Migrate(ctx context.Context, vmIDOrName, hostIDOrName string
 }
 
 // resolveHostID 解析 host 名称或 ID。
-// 如果 nameOrID 为空，在同集群内随机选择一台主机（排除 ExcludeHostID）。
+//
+// 行为约定（v0.2.1 修复）：
+//   - nameOrID 非空 → 解析名称到 ID（IsID 直接透传）。
+//   - nameOrID 为空 → **不再客户端随机选 host**：govc / vCenter 的语义是让调度器自动决策，
+//     CloudTower 也应当走集群侧调度（cluster scheduler）。当前 SDK 的 MigrateVM 接受空 hostID 时
+//     由 CloudTower 自行选择目标主机。
+//
+// excludeHostID 仅在用户给了名字、并且名字解析后等于源主机时用于校验阻断（避免迁移到自己）。
 func (s *VMService) resolveHostID(ctx context.Context, nameOrID string, clusterID, excludeHostID string) (string, error) {
-	// 如果指定了 host，解析名称到 ID
-	if nameOrID != "" {
-		if IsID(nameOrID) {
-			return nameOrID, nil
-		}
-		host, err := s.c.GetHostByName(ctx, nameOrID)
-		if err != nil {
-			return "", fmt.Errorf("resolve host %q: %w", nameOrID, err)
-		}
-		return host.ID, nil
+	_ = clusterID // 保留参数以便后续做"集群范围内校验"
+	if nameOrID == "" {
+		// 空 hostID → 让 CloudTower 调度选目标，符合 govc 的行为预期。
+		return "", nil
 	}
-
-	// 随机选择一台主机（不能是当前主机）
-	hosts, err := s.c.ListHostsByCluster(ctx, clusterID)
+	if IsID(nameOrID) {
+		if nameOrID == excludeHostID {
+			return "", fmt.Errorf("target host %s is the current host of the VM", nameOrID)
+		}
+		return nameOrID, nil
+	}
+	host, err := s.c.GetHostByName(ctx, nameOrID)
 	if err != nil {
-		return "", fmt.Errorf("list hosts in cluster: %w", err)
+		return "", fmt.Errorf("resolve host %q: %w", nameOrID, err)
 	}
-
-	// 过滤掉当前主机
-	var validHosts []adapter.Host
-	for _, h := range hosts {
-		if h.ID != excludeHostID {
-			validHosts = append(validHosts, h)
-		}
+	if host.ID == excludeHostID {
+		return "", fmt.Errorf("target host %q resolves to the current host of the VM", nameOrID)
 	}
-
-	if len(validHosts) == 0 {
-		return "", fmt.Errorf("no available host for migration in cluster %s (current host: %s)", clusterID, excludeHostID)
-	}
-
-	// 随机选择一台
-	selected := validHosts[rand.Intn(len(validHosts))]
-	return selected.ID, nil
+	return host.ID, nil
 }
 
 // Export 导出 VM。
@@ -368,7 +360,13 @@ func (s *VMService) ListNics(ctx context.Context, vmIDOrName string) ([]adapter.
 }
 
 // UpdateNic updates a NIC configuration.
-func (s *VMService) UpdateNic(ctx context.Context, nicID string, spec adapter.VMNicUpdateSpec) (adapter.TaskRef, error) {
+// 必须指定 vmIDOrName，因 CloudTower update-vm-nic API 的 Where 是 VM 维度。
+func (s *VMService) UpdateNic(ctx context.Context, vmIDOrName, nicID string, spec adapter.VMNicUpdateSpec) (adapter.TaskRef, error) {
+	v, err := s.Resolve(ctx, vmIDOrName)
+	if err != nil {
+		return adapter.TaskRef{}, err
+	}
+	spec.VMID = v.ID
 	return s.c.UpdateNic(ctx, nicID, spec)
 }
 
@@ -382,7 +380,15 @@ func (s *VMService) ListDisks(ctx context.Context, vmIDOrName string) ([]adapter
 }
 
 // UpdateDisk updates disk configuration.
-func (s *VMService) UpdateDisk(ctx context.Context, diskID string, spec adapter.DiskUpdateSpec) (adapter.TaskRef, error) {
+//
+// 必须先 Resolve VM，然后把 VMID 透传给 adapter（CloudTower update-vm-disk
+// 的 Where 是 VM 维度，不是 disk 维度）。
+func (s *VMService) UpdateDisk(ctx context.Context, vmIDOrName, diskID string, spec adapter.DiskUpdateSpec) (adapter.TaskRef, error) {
+	v, err := s.Resolve(ctx, vmIDOrName)
+	if err != nil {
+		return adapter.TaskRef{}, err
+	}
+	spec.VMID = v.ID
 	return s.c.UpdateDisk(ctx, diskID, spec)
 }
 
@@ -410,6 +416,7 @@ func (s *VMService) RebuildVM(ctx context.Context, vmIDOrName string, spec adapt
 }
 
 // AbortMigrateAcrossCluster aborts a cross-cluster migration in progress.
+// 先把 name 解析成 VM ID 再传给 adapter，避免 adapter 拿到一个 name 当成 resource_id 过滤为空。
 func (s *VMService) AbortMigrateAcrossCluster(ctx context.Context, vmIDOrName string) (adapter.TaskRef, error) {
 	v, err := s.Resolve(ctx, vmIDOrName)
 	if err != nil {
@@ -419,10 +426,26 @@ func (s *VMService) AbortMigrateAcrossCluster(ctx context.Context, vmIDOrName st
 }
 
 // ConvertToVM converts a template to a VM.
-func (s *VMService) ConvertToVM(ctx context.Context, templateIDOrName string) (adapter.TaskRef, error) {
-	templateID, err := s.resolveTemplateID(ctx, templateIDOrName)
-	if err != nil {
-		return adapter.TaskRef{}, err
+//
+// 如果 newName 为空，则回退到 "<template-name>-vm"，避免下发空字符串导致 CloudTower 422。
+func (s *VMService) ConvertToVM(ctx context.Context, templateIDOrName, newName string) (adapter.TaskRef, error) {
+	tpl, err := s.c.GetContentLibraryTemplateByName(ctx, templateIDOrName)
+	if err != nil && !IsID(templateIDOrName) {
+		return adapter.TaskRef{}, fmt.Errorf("resolve template %q: %w", templateIDOrName, err)
 	}
-	return s.c.ConvertToVM(ctx, templateID)
+
+	templateID := templateIDOrName
+	tplName := ""
+	if tpl != nil {
+		templateID = tpl.ID
+		tplName = tpl.Name
+	}
+	if newName == "" {
+		if tplName != "" {
+			newName = tplName + "-vm"
+		} else {
+			newName = "converted-vm"
+		}
+	}
+	return s.c.ConvertToVM(ctx, templateID, newName)
 }

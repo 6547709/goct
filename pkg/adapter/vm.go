@@ -53,7 +53,7 @@ type VMOps interface {
 	ResetPassword(ctx context.Context, vmID string, spec ResetPasswordSpec) (TaskRef, error)
 	RebuildVM(ctx context.Context, vmID string, spec RebuildVMSpec) (TaskRef, error)
 	AbortMigrateAcrossCluster(ctx context.Context, vmID string) (TaskRef, error)
-	ConvertToVM(ctx context.Context, templateID string) (TaskRef, error)
+	ConvertToVM(ctx context.Context, templateID, name string) (TaskRef, error)
 }
 
 // ---------- ListVMs ----------
@@ -64,7 +64,11 @@ func (c *defaultClient) ListVMs(ctx context.Context, opts ListOpts) ([]VM, error
 
 	where := &models.VMWhereInput{}
 	hasWhere := false
-	if opts.NameContains != "" {
+	// Name 精确匹配优先于 NameContains（v0.2.1 新增），减少大列表场景的客户端过滤量。
+	if opts.Name != "" {
+		where.Name = pointy.String(opts.Name)
+		hasWhere = true
+	} else if opts.NameContains != "" {
 		where.NameContains = pointy.String(opts.NameContains)
 		hasWhere = true
 	}
@@ -121,6 +125,13 @@ func (c *defaultClient) GetVM(ctx context.Context, id string) (*VM, error) {
 
 // ---------- CreateVM ----------
 
+// CreateVM 创建 VM，按 spec.Disks / spec.Nics 显式构造盘和网卡，不再注入"魔法默认值"。
+//
+// 行为约定（v0.2.1 修复）：
+//   - 不再硬编码 10 GB SCSI 磁盘；spec.Disks 为空 → 创建无盘 VM（CloudTower 一般会要求至少 1 块盘，
+//     由 server 端报错给用户更直观，比悄悄塞默认盘安全）。
+//   - 不再硬编码无 VLAN 的 VIRTIO 网卡；spec.Nics 为空 → 不下发 NIC。
+//   - HA: spec.HA == nil → 不下发该字段（SDK 默认）；非 nil → 显式下发。
 func (c *defaultClient) CreateVM(ctx context.Context, spec VMCreateSpec) (TaskRef, error) {
 	fw := models.VMFirmwareBIOS
 	if strings.EqualFold(spec.Firmware, "UEFI") {
@@ -133,42 +144,78 @@ func (c *defaultClient) CreateVM(ctx context.Context, spec VMCreateSpec) (TaskRe
 		cores = 1
 	}
 
-	// 默认创建一个 10GB SCSI 磁盘
-	defaultDiskSize := int64(10 * 1024 * 1024 * 1024) // 10GB
-	bus := models.BusSCSI
-
 	p := &models.VMCreationParams{
 		ClusterID:  pointy.String(spec.ClusterID),
 		Name:       pointy.String(spec.Name),
-		Ha:        pointy.Bool(true),
 		CPUSockets: pointy.Int32(sockets),
 		CPUCores:   pointy.Int32(cores),
 		Memory:     pointy.Int64(spec.MemoryBytes),
 		Firmware:   &fw,
 		Status:     modelVMStatusStopped(),
-		// 必须提供 vm_disks 和 vm_nics
-		VMDisks: &models.VMDiskParams{
-			MountNewCreateDisks: []*models.MountNewCreateDisksParams{
-				{
-					Boot: pointy.Int32(0),
-					Bus:   &bus,
-					Index: pointy.Int32(0),
-					VMVolume: &models.MountNewCreateDisksParamsVMVolume{
-						Name: pointy.String("disk0"),
-						Size: pointy.Int64(defaultDiskSize),
-					},
-				},
-			},
-		},
-		VMNics: []*models.VMNicParams{
-			{
-				Type:  models.VMNicTypeVLAN.Pointer(),
-				Model: models.VMNicModelVIRTIO.Pointer(),
-			},
-		},
+	}
+	if spec.HA != nil {
+		p.Ha = pointy.Bool(*spec.HA)
 	}
 	if spec.Description != "" {
 		p.Description = pointy.String(spec.Description)
+	}
+
+	// 显式磁盘
+	if len(spec.Disks) > 0 {
+		mounts := make([]*models.MountNewCreateDisksParams, 0, len(spec.Disks))
+		for i, d := range spec.Disks {
+			bus := mapBus(d.Bus)
+			boot := d.Boot
+			if boot == 0 {
+				boot = int32(i)
+			}
+			idx := d.Index
+			if idx == 0 {
+				idx = int32(i)
+			}
+			name := d.Name
+			if name == "" {
+				name = fmt.Sprintf("disk%d", i)
+			}
+			mp := &models.MountNewCreateDisksParams{
+				Boot:  pointy.Int32(boot),
+				Bus:   &bus,
+				Index: pointy.Int32(idx),
+				VMVolume: &models.MountNewCreateDisksParamsVMVolume{
+					Name: pointy.String(name),
+					Size: pointy.Int64(d.SizeBytes),
+				},
+			}
+			if d.IOPSMax > 0 {
+				mp.MaxIops = pointy.Int64(d.IOPSMax)
+			}
+			mounts = append(mounts, mp)
+		}
+		p.VMDisks = &models.VMDiskParams{MountNewCreateDisks: mounts}
+	}
+
+	// 显式网卡
+	if len(spec.Nics) > 0 {
+		nics := make([]*models.VMNicParams, 0, len(spec.Nics))
+		for _, n := range spec.Nics {
+			nicType := models.VMNicTypeVLAN
+			if strings.EqualFold(n.Type, "VPC") {
+				nicType = models.VMNicTypeVPC
+			}
+			model := models.VMNicModelVIRTIO
+			if n.Model != "" {
+				model = models.VMNicModel(strings.ToUpper(n.Model))
+			}
+			np := &models.VMNicParams{
+				Type:  &nicType,
+				Model: &model,
+			}
+			if n.VlanID != "" {
+				np.ConnectVlanID = pointy.String(n.VlanID)
+			}
+			nics = append(nics, np)
+		}
+		p.VMNics = nics
 	}
 
 	params := vm.NewCreateVMParams()
@@ -180,6 +227,19 @@ func (c *defaultClient) CreateVM(ctx context.Context, spec VMCreateSpec) (TaskRe
 		return TaskRef{}, fmt.Errorf("create vm %s: %w", spec.Name, err)
 	}
 	return firstVMTaskRef(resp.Payload), nil
+}
+
+// mapBus 把字符串 bus 名映射到 SDK 枚举，未识别时回退 SCSI。
+// CloudTower SDK 当前只支持 IDE / SCSI / VIRTIO 三种枚举。
+func mapBus(s string) models.Bus {
+	switch strings.ToUpper(strings.TrimSpace(s)) {
+	case "IDE":
+		return models.BusIDE
+	case "VIRTIO", "NVME", "NVMe":
+		return models.BusVIRTIO
+	default:
+		return models.BusSCSI
+	}
 }
 
 // ---------- CloneVM ----------
@@ -223,14 +283,19 @@ func (c *defaultClient) DestroyVM(ctx context.Context, id string, _ bool) (TaskR
 
 // ---------- MigrateVM ----------
 
+// MigrateVM 在同集群内迁移 VM。
+// hostID 为空时不下发 HostID 字段，让 CloudTower 调度器自动选目标主机
+// （v0.2.1 修复：替代之前 service 层客户端 random 选 host 的反 govc 语义）。
 func (c *defaultClient) MigrateVM(ctx context.Context, id, hostID string) (TaskRef, error) {
 	params := vm.NewMigrateVMParams()
 	params.SetContext(ctx)
+	data := &models.VMMigrateParamsData{}
+	if hostID != "" {
+		data.HostID = pointy.String(hostID)
+	}
 	params.SetRequestBody(&models.VMMigrateParams{
 		Where: &models.VMWhereInput{ID: pointy.String(id)},
-		Data: &models.VMMigrateParamsData{
-			HostID: pointy.String(hostID),
-		},
+		Data:  data,
 	})
 	resp, err := c.api.VM.MigrateVM(params)
 	if err != nil {
@@ -341,14 +406,16 @@ func (c *defaultClient) PowerVM(ctx context.Context, id string, action PowerActi
 
 // ---------- UpdateVM ----------
 
+// UpdateVM 更新 VM 基本信息。
+// spec 字段是 *string：nil 不下发，非 nil（含 ""）显式下发，支持清空。
 func (c *defaultClient) UpdateVM(ctx context.Context, id string, spec VMUpdateSpec) (TaskRef, error) {
 	where := &models.VMWhereInput{ID: pointy.String(id)}
 	data := &models.VMUpdateParamsData{}
-	if spec.Name != "" {
-		data.Name = pointy.String(spec.Name)
+	if spec.Name != nil {
+		data.Name = pointy.String(*spec.Name)
 	}
-	if spec.Description != "" {
-		data.Description = pointy.String(spec.Description)
+	if spec.Description != nil {
+		data.Description = pointy.String(*spec.Description)
 	}
 	params := vm.NewUpdateVMParams()
 	params.SetContext(ctx)
@@ -405,13 +472,7 @@ func (c *defaultClient) ShutDownVM(ctx context.Context, id string) (TaskRef, err
 // ---------- AddDisk ----------
 
 func (c *defaultClient) AddDisk(ctx context.Context, vmID string, spec DiskAddSpec) (TaskRef, error) {
-	bus := models.BusSCSI
-	switch spec.Bus {
-	case "IDE":
-		bus = models.BusIDE
-	case "VIRTIO", "NVMe", "NVME":
-		bus = models.BusVIRTIO
-	}
+	bus := mapBus(spec.Bus)
 
 	bootVal := int32(0)
 	if spec.Boot > 0 {
@@ -776,9 +837,15 @@ func toVM(v *models.VM) VM {
 		out.MemoryBytes = uint64(*v.Memory)
 	}
 	if v.Ips != nil && *v.Ips != "" {
-		out.IPs = strings.Split(*v.Ips, ",")
-		for i := range out.IPs {
-			out.IPs[i] = strings.TrimSpace(out.IPs[i])
+		// CloudTower 的 ips 字段是逗号分隔的多 IP；做 trim + 过滤空值，
+		// 避免出现 "1.2.3.4,," 这类输入产生空元素。
+		raw := strings.Split(*v.Ips, ",")
+		out.IPs = make([]string, 0, len(raw))
+		for _, ip := range raw {
+			ip = strings.TrimSpace(ip)
+			if ip != "" {
+				out.IPs = append(out.IPs, ip)
+			}
 		}
 	}
 	if v.Cluster != nil && v.Cluster.ID != nil {
@@ -1101,9 +1168,12 @@ func toVMNic(n *models.VMNic) VMNic {
 	return out
 }
 
-// ---------- UpdateNic ----------
-
+// UpdateNic 修改一张 VM NIC 的属性。
+// v0.2.1 修复：补 Where（CloudTower API 要求）。
 func (c *defaultClient) UpdateNic(ctx context.Context, nicID string, spec VMNicUpdateSpec) (TaskRef, error) {
+	if spec.VMID == "" {
+		return TaskRef{}, fmt.Errorf("update nic %s: VMID required", nicID)
+	}
 	data := &models.VMUpdateNicParamsData{
 		NicID: pointy.String(nicID),
 	}
@@ -1120,7 +1190,7 @@ func (c *defaultClient) UpdateNic(ctx context.Context, nicID string, spec VMNicU
 		data.MacAddress = pointy.String(spec.MacAddress)
 	}
 	if spec.Model != "" {
-		model := models.VMNicModel(spec.Model)
+		model := models.VMNicModel(strings.ToUpper(spec.Model))
 		data.Model = &model
 	}
 	if spec.SubnetMask != "" {
@@ -1130,7 +1200,8 @@ func (c *defaultClient) UpdateNic(ctx context.Context, nicID string, spec VMNicU
 	params := vm.NewUpdateVMNicParams()
 	params.SetContext(ctx)
 	params.SetRequestBody(&models.VMUpdateNicParams{
-		Data: data,
+		Where: &models.VMWhereInput{ID: pointy.String(spec.VMID)},
+		Data:  data,
 	})
 	resp, err := c.api.VM.UpdateVMNic(params)
 	if err != nil {
@@ -1139,17 +1210,39 @@ func (c *defaultClient) UpdateNic(ctx context.Context, nicID string, spec VMNicU
 	return firstVMTaskRef(resp.Payload), nil
 }
 
-// ---------- UpdateDisk ----------
-
+// UpdateDisk 更新 VM 磁盘配置。
+//
+// v0.2.1 修复：
+//   - 原实现 `data := {VMDiskID: diskID}` 把所有用户字段全丢；
+//   - 原实现 `Where: VMWhereInput{ID: diskID}` 把 disk ID 当 VM ID 用，类型语义双错；
+//   - SDK 的 update-vm-disk API 真实可改字段是 bus / vm_volume_id / elf_image_id / content_library_image_id。
+//
+// CloudTower 还要求 Where 必须指向 VM（不是 disk），所以 spec.VMID 必填。
 func (c *defaultClient) UpdateDisk(ctx context.Context, diskID string, spec DiskUpdateSpec) (TaskRef, error) {
+	if spec.VMID == "" {
+		return TaskRef{}, fmt.Errorf("update disk %s: VMID required (use service layer to resolve VM first)", diskID)
+	}
 	data := &models.VMUpdateDiskParamsData{
 		VMDiskID: pointy.String(diskID),
+	}
+	if spec.Bus != "" {
+		bus := mapBus(spec.Bus)
+		data.Bus = &bus
+	}
+	if spec.VMVolumeID != "" {
+		data.VMVolumeID = pointy.String(spec.VMVolumeID)
+	}
+	if spec.ElfImageID != "" {
+		data.ElfImageID = pointy.String(spec.ElfImageID)
+	}
+	if spec.ContentLibraryImageID != "" {
+		data.ContentLibraryImageID = pointy.String(spec.ContentLibraryImageID)
 	}
 
 	params := vm.NewUpdateVMDiskParams()
 	params.SetContext(ctx)
 	params.SetRequestBody(&models.VMUpdateDiskParams{
-		Where: &models.VMWhereInput{ID: pointy.String(diskID)},
+		Where: &models.VMWhereInput{ID: pointy.String(spec.VMID)},
 		Data:  data,
 	})
 	resp, err := c.api.VM.UpdateVMDisk(params)
@@ -1220,11 +1313,24 @@ func (c *defaultClient) RebuildVM(ctx context.Context, vmID string, spec Rebuild
 
 // ---------- AbortMigrateAcrossCluster ----------
 
+// AbortMigrateAcrossCluster 取消跨集群迁移。
+//
+// v0.2.1 修复：原实现传 `Tasks: &TaskWhereInput{}`（空过滤）等于"abort 全部迁移 task"，
+// 在多 VM 并行迁移场景会误中其他 task。现在按 ResourceID == vmID 精确过滤。
+//
+// 注意：CloudTower 的 in-progress migration task 通常以 vmID 作为 resource_id 关联，
+// 这里用 ResourceID 而不是 OR(vm.id) 是因为 TaskWhereInput 没有直接的 VM 关系字段，
+// 但有 resource_id（任务关联的目标实体 ID）。
 func (c *defaultClient) AbortMigrateAcrossCluster(ctx context.Context, vmID string) (TaskRef, error) {
+	if vmID == "" {
+		return TaskRef{}, fmt.Errorf("abort migrate: vmID required")
+	}
 	params := vm.NewAbortMigrateVMAcrossClusterParams()
 	params.SetContext(ctx)
 	params.SetRequestBody(&models.AbortMigrateVMAcrossClusterParams{
-		Tasks: &models.TaskWhereInput{},
+		Tasks: &models.TaskWhereInput{
+			ResourceID: pointy.String(vmID),
+		},
 	})
 	resp, err := c.api.VM.AbortMigrateVMAcrossCluster(params)
 	if err != nil {
@@ -1242,13 +1348,17 @@ func (c *defaultClient) AbortMigrateAcrossCluster(ctx context.Context, vmID stri
 
 // ---------- ConvertToVM ----------
 
-func (c *defaultClient) ConvertToVM(ctx context.Context, templateID string) (TaskRef, error) {
+// ConvertToVM 把模板转换成 VM。
+//
+// v0.2.1 修复：原实现把 Name 写死为 ""，CloudTower 必拒。现在 name 由调用方透传，
+// 服务层若未传则需自己回退到模板名 + "-vm"。
+func (c *defaultClient) ConvertToVM(ctx context.Context, templateID, name string) (TaskRef, error) {
 	params := vm.NewConvertVMTemplateToVMParams()
 	params.SetContext(ctx)
 	params.SetRequestBody([]*models.ConvertVMTemplateToVMParams{
 		{
 			ConvertedFromTemplateID: pointy.String(templateID),
-			Name: pointy.String(""),
+			Name:                    pointy.String(name),
 		},
 	})
 	resp, err := c.api.VM.ConvertVMTemplateToVM(params)

@@ -15,9 +15,13 @@ func newUpdate() *cobra.Command {
 		Short: "Update VM name or description",
 		Long: `Update VM basic information (name, description).
 
+Use --description='' (empty string) to explicitly clear the description.
+Flags that are not provided are not sent and keep the original value.
+
 Examples:
   goct vm.update myvm --name newname
-  goct vm.update myvm --description "production server"`,
+  goct vm.update myvm --description "production server"
+  goct vm.update myvm --description ""             # clear description`,
 		GroupID: groupID,
 		Args:    cobra.MaximumNArgs(1),
 		RunE: func(c *cobra.Command, args []string) error {
@@ -26,10 +30,14 @@ Examples:
 			if err != nil {
 				return err
 			}
-			ref, err := service.NewVM(cli).Update(c.Context(), id, adapter.VMUpdateSpec{
-				Name:        name,
-				Description: description,
-			})
+			spec := adapter.VMUpdateSpec{}
+			if c.Flags().Changed("name") {
+				spec.Name = &name
+			}
+			if c.Flags().Changed("description") {
+				spec.Description = &description
+			}
+			ref, err := service.NewVM(cli).Update(c.Context(), id, spec)
 			if err != nil {
 				return err
 			}
@@ -40,7 +48,7 @@ Examples:
 			return w.Watch(c.Context(), ref.ID)
 		},
 	}
-	c.Flags().StringVar(&name, "name", "", "New VM name")
-	c.Flags().StringVar(&description, "description", "", "New VM description")
+	c.Flags().StringVar(&name, "name", "", "New VM name (omit to keep, '' is rejected by CloudTower)")
+	c.Flags().StringVar(&description, "description", "", "New VM description ('' clears it)")
 	return c
 }

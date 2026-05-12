@@ -12,7 +12,12 @@ import (
 func newMigrate() *cobra.Command {
 	var host string
 	c := &cobra.Command{
-		Use: "vm.migrate [name|id]", Short: "Migrate a VM to another host (random if --host not specified)", GroupID: groupID,
+		Use: "vm.migrate [name|id]", Short: "Migrate a VM to another host (omit --host to let CloudTower choose)", GroupID: groupID,
+		Long: `Migrate a VM to another host within the same cluster.
+
+If --host is omitted, CloudTower will pick a target host (DRS-like behavior).
+If --host is given (name or ID), goct validates it is not the current host
+and rejects the migration in that case.`,
 		Args: cobra.MaximumNArgs(1),
 		RunE: func(c *cobra.Command, args []string) error {
 			cli := client.From(c.Context())
@@ -32,6 +37,6 @@ func newMigrate() *cobra.Command {
 			return w.Watch(c.Context(), ref.ID)
 		},
 	}
-	c.Flags().StringVar(&host, "host", "", "Target host name or ID (optional, random host if not specified)")
+	c.Flags().StringVar(&host, "host", "", "Target host name or ID (omit = let CloudTower choose)")
 	return c
 }

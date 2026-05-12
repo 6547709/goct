@@ -3,6 +3,8 @@ bin/
 dist/
 goct
 goct.exe
+goct_test
+goct_*
 
 !/skills/
 
@@ -27,3 +29,9 @@ coverage.out
 # External reference docs (cloned on demand, not part of source)
 # See docs/references/README.md for instructions to restore.
 docs/references/cloudtower-skills/
+
+# Submodule placeholder dirs (clone-on-demand; do not commit as gitlinks)
+/cloudtower-go-sdk/
+/cloudtower-skills/
+/govmomi/
+/packer-plugin-cloudtower/

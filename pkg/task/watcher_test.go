@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/6547709/goct/pkg/adapter"
 	"github.com/6547709/goct/pkg/task"
 )
 
@@ -86,5 +87,25 @@ func TestWatcher_VerboseWritesProgress(t *testing.T) {
 	}
 	if buf.Len() == 0 {
 		t.Fatal("expected progress output, got empty")
+	}
+}
+
+// TestWatcher_ErrFailed_AliasesAdapter 锁定 Bug 2 修复：
+// task.ErrFailed 必须是 adapter.ErrTaskFailed 同一个 sentinel，
+// 否则 cmd/helpers.go 的退出码 4 永远命不中。
+func TestWatcher_ErrFailed_AliasesAdapter(t *testing.T) {
+	if !errors.Is(task.ErrFailed, adapter.ErrTaskFailed) {
+		t.Fatal("task.ErrFailed must be the same sentinel as adapter.ErrTaskFailed")
+	}
+	if !errors.Is(adapter.ErrTaskFailed, task.ErrFailed) {
+		t.Fatal("adapter.ErrTaskFailed must round-trip with task.ErrFailed")
+	}
+
+	// Verify Watch wraps to both sentinels.
+	f := &fakeOps{progresses: []int{100}, statuses: []string{"FAILED"}}
+	w := task.New(f, task.Options{Out: &bytes.Buffer{}, Interval: time.Millisecond, Quiet: true})
+	err := w.Watch(context.Background(), "tid")
+	if !errors.Is(err, adapter.ErrTaskFailed) {
+		t.Fatalf("Watch err=%v should wrap adapter.ErrTaskFailed", err)
 	}
 }

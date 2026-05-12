@@ -19,6 +19,16 @@ func (f *fakeClient) About(_ context.Context) (adapter.TowerInfo, error) {
 }
 
 func (f *fakeClient) ListVMs(_ context.Context, opts adapter.ListOpts) ([]adapter.VM, error) {
+	// 兼容 Resolve 的服务端精确匹配优化（v0.2.1）
+	if opts.Name != "" {
+		var out []adapter.VM
+		for _, v := range f.vms {
+			if v.Name == opts.Name {
+				out = append(out, v)
+			}
+		}
+		return out, nil
+	}
 	if opts.NameContains == "" {
 		return f.vms, nil
 	}
@@ -168,7 +178,7 @@ func (f *fakeClient) AbortMigrateAcrossCluster(_ context.Context, _ string) (ada
 	return adapter.TaskRef{ID: "task-abort-migrate"}, nil
 }
 
-func (f *fakeClient) ConvertToVM(_ context.Context, _ string) (adapter.TaskRef, error) {
+func (f *fakeClient) ConvertToVM(_ context.Context, _, _ string) (adapter.TaskRef, error) {
 	return adapter.TaskRef{ID: "task-convert-to-vm"}, nil
 }
 
@@ -422,6 +432,10 @@ func (f *fakeClient) DeployCloudTowerApplication(_ context.Context, _, _ string,
 	return adapter.TaskRef{ID: "task-deploy"}, nil
 }
 
+func (f *fakeClient) ListEvents(_ context.Context, _ adapter.EventListOpts) ([]adapter.Event, error) {
+	return nil, nil
+}
+
 func newFakeClient() *fakeClient {
 	return &fakeClient{
 		vms: []adapter.VM{
@@ -519,15 +533,18 @@ func TestResolver_IsID(t *testing.T) {
 		// UUID
 		{"aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", true},
 		{"5e52cf6e-1e8c-4a0a-9e3a-1b2c3d4e5f6a", true},
-		// cuid (CloudTower style)
+		// cuid (CloudTower style, 27 chars: cl + 25)
 		{"cl5k7g2xo04070822fhxjfsev9q", true},
 		{"cl0000000000000000000000000", true},
 		// Not IDs
 		{"my-vm-name", false},
 		{"web-server-01", false},
 		{"", false},
-		{"cl", false},       // too short
-		{"CL5K7G2XO04070822FHXJFSEV9Q", false}, // cuid is lowercase
+		{"cl", false},                            // too short
+		{"CL5K7G2XO04070822FHXJFSEV9Q", false},   // cuid is lowercase
+		// Bug 13 regression: long lowercase name must not be misclassified as cuid
+		{"abcdefghij1234567890abcde", false},     // 25 chars but doesn't start with "cl"
+		{"abcdefghij12345678901234567", false},   // 27 chars but no "cl" prefix
 	}
 	for _, tt := range tests {
 		if got := IsID(tt.in); got != tt.want {

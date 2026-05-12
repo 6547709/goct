@@ -11,50 +11,47 @@ import (
 )
 
 func newNicUpdate() *cobra.Command {
+	var vmID, nicID string
 	var nicIndex int32
 	var connectVlanID string
 	var enableFlag, disableFlag bool
 	var gateway, ipAddress, macAddress, model, subnetMask string
 
 	c := &cobra.Command{
-		Use:   "nic.update",
+		Use:   "vm.nic.update",
 		Short: "Update VM NIC configuration",
 		Long: `Update a NIC configuration on a VM.
 
+Both --vm and --nic-id are required (CloudTower API requires both VM scope
+and a specific NIC ID).
+
 Examples:
-  goct vm nic.update --nic-index 1 --gateway 192.168.1.1
-  goct vm nic.update --nic-index 1 --model VIRTIO
-  goct vm nic.update --nic-index 1 --connect-vlan-id vlan-uuid`,
+  goct vm.nic.update --vm myvm --nic-id nic-uuid --gateway 192.168.1.1
+  goct vm.nic.update --vm myvm --nic-id nic-uuid --model VIRTIO
+  goct vm.nic.update --vm myvm --nic-id nic-uuid --connect-vlan-id vlan-uuid`,
 		RunE: func(c *cobra.Command, args []string) error {
 			cli := client.From(c.Context())
+			if vmID == "" {
+				return fmt.Errorf("--vm required")
+			}
+			if nicID == "" {
+				return fmt.Errorf("--nic-id required")
+			}
 			spec := adapter.VMNicUpdateSpec{
-				NicIndex: nicIndex,
+				NicIndex:      nicIndex,
+				ConnectVlanID: connectVlanID,
+				Gateway:       gateway,
+				IPAddress:     ipAddress,
+				MacAddress:    macAddress,
+				Model:         model,
+				SubnetMask:    subnetMask,
 			}
-			if connectVlanID != "" {
-				spec.ConnectVlanID = connectVlanID
-			}
-			if gateway != "" {
-				spec.Gateway = gateway
-			}
-			if ipAddress != "" {
-				spec.IPAddress = ipAddress
-			}
-			if macAddress != "" {
-				spec.MacAddress = macAddress
-			}
-			if model != "" {
-				spec.Model = model
-			}
-			if subnetMask != "" {
-				spec.SubnetMask = subnetMask
-			}
-			// Handle enable/disable flags
 			if enableFlag && !disableFlag {
 				spec.Enabled = pointy.Bool(true)
 			} else if disableFlag && !enableFlag {
 				spec.Enabled = pointy.Bool(false)
 			}
-			ref, err := service.NewVM(cli).UpdateNic(c.Context(), "", spec)
+			ref, err := service.NewVM(cli).UpdateNic(c.Context(), vmID, nicID, spec)
 			if err != nil {
 				return err
 			}
@@ -66,7 +63,9 @@ Examples:
 			return nil
 		},
 	}
-	c.Flags().Int32Var(&nicIndex, "nic-index", 0, "NIC index (LocalID)")
+	c.Flags().StringVar(&vmID, "vm", "", "VM name or ID (required)")
+	c.Flags().StringVar(&nicID, "nic-id", "", "NIC ID (required)")
+	c.Flags().Int32Var(&nicIndex, "nic-index", 0, "NIC index (LocalID, optional)")
 	c.Flags().StringVar(&connectVlanID, "connect-vlan-id", "", "Connect to VLAN ID")
 	c.Flags().StringVar(&gateway, "gateway", "", "Gateway IP")
 	c.Flags().StringVar(&ipAddress, "ip", "", "IP address")

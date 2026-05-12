@@ -12,15 +12,23 @@ package task
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"os"
 	"time"
+
+	"github.com/6547709/goct/pkg/adapter"
 )
 
-// ErrFailed 表示远端 task 状态为 FAILED。可用 errors.Is 匹配。
-var ErrFailed = errors.New("task failed")
+// ErrFailed 表示远端 task 状态为 FAILED。
+//
+// 它是 adapter.ErrTaskFailed 的别名（共用同一变量），保证：
+//   - 历史调用方 errors.Is(err, task.ErrFailed) 仍然有效；
+//   - cmd/helpers.go 用 adapter.ErrTaskFailed 做 exit code 映射也能命中。
+//
+// 修复 v0.2.1 之前的 sentinel 不一致 Bug：原来这里独立 New 了一个，
+// 导致 errorExit 永远走不到 case adapter.ErrTaskFailed。
+var ErrFailed = adapter.ErrTaskFailed
 
 // 终结态字符串（与 SDK 保持一致）。
 const (

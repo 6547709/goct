@@ -56,16 +56,19 @@ Examples:
 }
 
 func newDiskUpdate() *cobra.Command {
-	var diskID string
+	var diskID, vmID, bus, volumeID, isoImageID, contentImageID string
 	c := &cobra.Command{
 		Use:     "vm.disk.update",
 		Short:   "Update VM disk settings",
 		GroupID: "vm",
 		Long: `Update a VM disk configuration.
 
+Note: CloudTower's update-vm-disk API only supports changing bus / vm-volume /
+ELF image / content-library image. To resize use vm.disk.expand instead.
+
 Examples:
-  goct vm disk.update --disk disk-uuid
-  goct vm disk.update disk-uuid`,
+  goct vm disk.update --vm myvm --disk disk-uuid --bus VIRTIO
+  goct vm disk.update --vm myvm --disk disk-uuid --volume new-vol-uuid`,
 		RunE: func(c *cobra.Command, args []string) error {
 			cli := client.From(c.Context())
 			if len(args) > 0 && diskID == "" {
@@ -74,8 +77,15 @@ Examples:
 			if diskID == "" {
 				return fmt.Errorf("disk ID required (use --disk or positional arg)")
 			}
-			// Note: MaxBandwidth and MaxIops not supported by update-vm-disk API
-			ref, err := service.NewVM(cli).UpdateDisk(c.Context(), diskID, adapter.DiskUpdateSpec{})
+			if vmID == "" {
+				return fmt.Errorf("--vm required (CloudTower API needs VM ID for disk update)")
+			}
+			ref, err := service.NewVM(cli).UpdateDisk(c.Context(), vmID, diskID, adapter.DiskUpdateSpec{
+				Bus:                   bus,
+				VMVolumeID:            volumeID,
+				ElfImageID:            isoImageID,
+				ContentLibraryImageID: contentImageID,
+			})
 			if err != nil {
 				return err
 			}
@@ -87,6 +97,11 @@ Examples:
 			return nil
 		},
 	}
+	c.Flags().StringVar(&vmID, "vm", "", "VM name or ID (required)")
 	c.Flags().StringVar(&diskID, "disk", "", "Disk ID")
+	c.Flags().StringVar(&bus, "bus", "", "New bus: SCSI / IDE / VIRTIO")
+	c.Flags().StringVar(&volumeID, "volume", "", "Replace underlying VM volume by ID")
+	c.Flags().StringVar(&isoImageID, "elf-image", "", "Mount ELF image (CD-ROM)")
+	c.Flags().StringVar(&contentImageID, "content-image", "", "Mount content library image")
 	return c
 }

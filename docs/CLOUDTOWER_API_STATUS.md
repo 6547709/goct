@@ -191,7 +191,7 @@
 | → vm.gpu.rm | 移除 GPU | ✅ | |
 | → vm.gpu.ls | 列表 GPU | ✅ | |
 | **pci_device** | PCI 设备 | ❌ | **未实现** |
-| **usb_device** | USB 设备 | ❌ | **未实现** |
+| **usb_device** | USB 设备 | ✅ | 见上方 usb 部分（v0.2.x 已实现） |
 | **pmem_dimm** | PMem 内存 | ❌ | **未实现** |
 
 ### 内容库
@@ -202,13 +202,14 @@
 | → template.ls | 列表模板 | ✅ | |
 | → template.rm | 删除模板 | ✅ | |
 | → vm.create --from-template | 从模板创建 VM | ✅ | |
-| **content_library_image** | 内容库镜像 | ❌ | **未实现** |
+| **content_library_image** | 内容库镜像 | ✅ | ls / import / distribute / delete |
 | **elf_image** | ELF 镜像 | ❌ | **未实现** |
 | **svt_image** | SVT 镜像 | ❌ | **未实现** |
 | **cluster_image** | 集群镜像 | ❌ | **未实现** |
 | **upload_task** | 上传任务 | ❌ | **未实现** |
-| **application** | 应用管理 | ❌ | **未实现** |
-| **deploy** | 部署管理 | ❌ | **未实现** |
+| **application** | 应用管理 | ✅ | ls（应用包/应用部署） |
+| **cloud_tower_application** | CloudTower 应用 | ✅ | ls / upload / delete / deploy |
+| **deploy** | 部署管理 | ✅ | ls |
 
 ### 标签和分类
 
@@ -313,7 +314,7 @@
 | **log_collection** | 日志收集 | ❌ | **未实现** |
 | **log_service_config** | 日志服务配置 | ❌ | **未实现** |
 | **system_audit_log** | 系统审计日志 | ❌ | **未实现** |
-| **user_audit_log** | 用户审计日志 | ❌ | **未实现** |
+| **user_audit_log** | 用户审计日志 | ✅ | 由 `goct events` 包装（v0.2.1） |
 | **table_reporter** | 表格报告 | ❌ | **未实现** |
 | **report_task** | 报告任务 | ❌ | **未实现** |
 | **report_template** | 报告模板 | ❌ | **未实现** |

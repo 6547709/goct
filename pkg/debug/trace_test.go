@@ -272,3 +272,34 @@ func TestTraceRoundTripper_Host(t *testing.T) {
 		t.Errorf("expected host 'example.com:8080', got '%s'", entry.Host)
 	}
 }
+
+// TestTraceRoundTripper_SetBase 锁定 Bug 1 修复：SetBase 后 trace 应使用新 base。
+//
+// 历史 Bug：cmd/root.go 调 NewTraceRoundTripper(nil, ...)，nil base 会回退到
+// http.DefaultTransport（做 TLS 校验），导致 --trace --insecure 同开时仍校验自签名。
+// 修复方案是 adapter.newTransport 在装配时 SetBase 注入 insecure transport。
+func TestTraceRoundTripper_SetBase(t *testing.T) {
+	first := &mockTransport{Response: &http.Response{StatusCode: 200, Body: io.NopCloser(strings.NewReader(""))}}
+	tr := NewTraceRoundTripper(nil, TraceLevelTrace, &bytes.Buffer{})
+
+	// SetBase 之前默认是 http.DefaultTransport（不可控）。
+	// SetBase(first) 之后，所有请求必须从 first 走。
+	tr.SetBase(first)
+
+	req, _ := http.NewRequest("GET", "https://example.com/x", nil)
+	if _, err := tr.RoundTrip(req); err != nil {
+		t.Fatalf("RoundTrip err=%v", err)
+	}
+	if len(first.Requests) != 1 {
+		t.Fatalf("expected request to go through first transport, got %d", len(first.Requests))
+	}
+
+	// SetBase(nil) 不应该清空已有 base（防止误覆盖）。
+	tr.SetBase(nil)
+	if _, err := tr.RoundTrip(req); err != nil {
+		t.Fatalf("RoundTrip err=%v", err)
+	}
+	if len(first.Requests) != 2 {
+		t.Fatalf("expected 2 requests through first after SetBase(nil), got %d", len(first.Requests))
+	}
+}

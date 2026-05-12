@@ -15,6 +15,8 @@ import (
 	"github.com/6547709/goct/cmd/content_library_image"
 	"github.com/6547709/goct/cmd/datastore"
 	"github.com/6547709/goct/cmd/deploy"
+	"github.com/6547709/goct/cmd/events"
+	"github.com/6547709/goct/cmd/find"
 	"github.com/6547709/goct/cmd/host"
 	"github.com/6547709/goct/cmd/license"
 	"github.com/6547709/goct/cmd/metrics"
@@ -48,6 +50,12 @@ var rootCmd = &cobra.Command{
 	PersistentPreRunE: func(c *cobra.Command, _ []string) error {
 		// 初始化分级日志（GOCT_LOG=TRACE|DEBUG|INFO|WARN|ERROR）
 		debug.Init()
+
+		// 子命令可通过 Annotations["nologin"]="true" 跳过登录步骤。
+		// 典型场景：version / completion / 纯本地的 session.ls 等。
+		if v, ok := c.Annotations["nologin"]; ok && v == "true" {
+			return nil
+		}
 
 		opts := debugFlags.Resolve()
 
@@ -107,6 +115,8 @@ func init() {
 	content_library_image.Register(rootCmd)
 	datastore.Register(rootCmd)
 	deploy.Register(rootCmd)
+	events.Register(rootCmd)
+	find.Register(rootCmd)
 	host.Register(rootCmd)
 	license.Register(rootCmd)
 	network.Register(rootCmd)
