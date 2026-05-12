@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/6547709/goct/pkg/adapter"
+	"github.com/smartxworks/cloudtower-go-sdk/v2/models"
 )
 
 // fakeClient 是 adapter.Client 的 test double。
@@ -288,6 +289,22 @@ func (f *fakeClient) GetTaskProgress(_ context.Context, _ string) (int, string, 
 
 func (f *fakeClient) AckAlert(_ context.Context, _ string) (adapter.TaskRef, error) {
 	return adapter.TaskRef{ID: "task-alert-ack"}, nil
+}
+
+func (f *fakeClient) GetVMMetrics(_ context.Context, _ *models.GetVMMetricInput) ([]*models.WithTaskMetric, error) {
+	return nil, nil
+}
+
+func (f *fakeClient) GetHostMetrics(_ context.Context, _ *models.GetHostMetricInput) ([]*models.WithTaskMetric, error) {
+	return nil, nil
+}
+
+func (f *fakeClient) GetVmVolumeMetrics(_ context.Context, _ *models.GetVMVolumeMetricInput) ([]*models.WithTaskMetric, error) {
+	return nil, nil
+}
+
+func (f *fakeClient) GetClusterMetrics(_ context.Context, _ *models.GetClusterMetricInput) ([]*models.WithTaskMetric, error) {
+	return nil, nil
 }
 
 func newFakeClient() *fakeClient {
