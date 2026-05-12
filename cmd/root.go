@@ -4,6 +4,8 @@ package cmd
 
 import (
 	"context"
+	"net/http"
+	"os"
 
 	"github.com/6547709/goct/cmd/alert"
 	"github.com/6547709/goct/cmd/cluster"
@@ -26,6 +28,7 @@ import (
 var (
 	connFlags   flags.ConnectionFlags
 	outputFlags flags.OutputFlags
+	debugFlags  debug.DebugFlags
 )
 
 // rootCmd 是 goct 的根命令，子命令通过各子包注册。
@@ -39,11 +42,14 @@ var rootCmd = &cobra.Command{
 		// 初始化分级日志（GOCT_LOG=TRACE|DEBUG|INFO|WARN|ERROR）
 		debug.Init()
 
-		// 带 nologin 注解的命令跳过 client 构造（如 goct version/session.*）
-		if c.Annotations["nologin"] == "true" {
-			debug.Debugf("skipping login for command %q (nologin annotation)", c.Name())
-			return nil
+		opts := debugFlags.Resolve()
+
+		// 如果启用了 trace，创建 TraceRoundTripper
+		var traceTransport http.RoundTripper
+		if opts.TraceLevel > debug.TraceLevelOff {
+			traceTransport = debug.NewTraceRoundTripper(nil, opts.TraceLevel, os.Stderr)
 		}
+
 		cfg, err := config.Resolve(config.Override{
 			URL:         connFlags.URL,
 			Username:    connFlags.Username,
@@ -56,13 +62,10 @@ var rootCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		debug.Debugf("resolved config: url=%s user=%s cluster=%s insecure=%v source=%s",
-			cfg.URL, cfg.Username, cfg.Cluster, cfg.Insecure, cfg.Source)
-		cli, err := client.New(c.Context(), cfg)
+		cli, err := client.New(c.Context(), cfg, traceTransport)
 		if err != nil {
 			return err
 		}
-		debug.Info("client created, login successful")
 		c.SetContext(client.With(c.Context(), cli))
 		return nil
 	},
@@ -72,6 +75,7 @@ func init() {
 	rootCmd.SetContext(context.Background())
 	connFlags.Register(rootCmd)
 	outputFlags.Register(rootCmd)
+	debugFlags.Register(rootCmd)
 
 	rootCmd.AddGroup(
 		&cobra.Group{ID: "system", Title: "System:"},
