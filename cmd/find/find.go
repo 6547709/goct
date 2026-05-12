@@ -99,10 +99,10 @@ folder, pg, template, label, user, alert).
 If --type is omitted, find scans every type.
 
 Examples:
-  goct find -type m -name web              # all VMs whose name contains "web"
-  goct find -type h --cluster c1           # all hosts in cluster c1
-  goct find -name prod                     # all resources whose name contains "prod"
-  goct find -type m --id-only | xargs -I{} goct vm.power.on {}`,
+  goct find --type m --name web           # all VMs whose name contains "web"
+  goct find --type h --cluster Cluster01  # all hosts in cluster c1
+  goct find --name prod                   # all resources whose name contains "prod" (scans all types)
+  goct find --type m --id-only | xargs -I{} goct vm.power.on {}`,
 		RunE: func(c *cobra.Command, args []string) error {
 			cli := client.From(c.Context())
 			selected, err := resolveTypes(typeFilter)
