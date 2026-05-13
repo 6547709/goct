@@ -262,7 +262,8 @@ type VMCreateFromTemplateSpec struct {
 	Firmware    string
 	Description string
 	IsFullCopy  bool
-	NIC         NicConfig // 网卡配置
+	NIC         NicConfig        // 网卡配置
+	CloudInit   *CloudInitSpec   // cloud-init 配置
 }
 
 // NicConfig 网卡配置
@@ -270,6 +271,24 @@ type NicConfig struct {
 	Type   string // VLAN / VPC
 	Model  string // E1000 / SRIOV / VIRTIO
 	VlanID string
+}
+
+// CloudInitSpec describes cloud-init configuration for VM creation from template.
+type CloudInitSpec struct {
+	Hostname            string            // VM hostname
+	DefaultUserPassword string            // Default user password
+	PublicKeys          []string          // SSH public keys
+	UserData            string            // Custom cloud-init user_data script
+	Networks            []NicStaticConfig // Static IP config per NIC
+}
+
+// NicStaticConfig describes static IP configuration for one NIC.
+type NicStaticConfig struct {
+	Index   int32  // NIC index (0-based), required
+	IP      string // Static IP address
+	Netmask string // Netmask in dotted notation
+	Gateway string // Default gateway IP
+	Type    string // "IPV4" (static) or "IPV4_DHCP" (DHCP)
 }
 
 // VMCloneSpec 是 vm.clone 命令需要的参数集合。
