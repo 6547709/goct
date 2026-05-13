@@ -779,6 +779,54 @@ func (c *defaultClient) CreateVMFromTemplate(ctx context.Context, spec VMCreateF
 		p.VMNics = vmNics
 	}
 
+	// Cloud-init configuration
+	if spec.CloudInit != nil {
+		ci := &models.TemplateCloudInit{}
+		if spec.CloudInit.Hostname != "" {
+			ci.Hostname = pointy.String(spec.CloudInit.Hostname)
+		}
+		if spec.CloudInit.DefaultUserPassword != "" {
+			ci.DefaultUserPassword = pointy.String(spec.CloudInit.DefaultUserPassword)
+		}
+		if len(spec.CloudInit.PublicKeys) > 0 {
+			ci.PublicKeys = spec.CloudInit.PublicKeys
+		}
+		if spec.CloudInit.UserData != "" {
+			ci.UserData = pointy.String(spec.CloudInit.UserData)
+		}
+		if len(spec.CloudInit.Networks) > 0 {
+			ci.Networks = make([]*models.CloudInitNetWork, 0, len(spec.CloudInit.Networks))
+			for _, n := range spec.CloudInit.Networks {
+				net := &models.CloudInitNetWork{
+					NicIndex: pointy.Int32(n.Index),
+				}
+				switch strings.ToUpper(n.Type) {
+				case "DHCP", "IPV4_DHCP":
+					net.Type = models.CloudInitNetworkTypeEnumIPV4DHCP.Pointer()
+				default: // IPV4 or empty
+					net.Type = models.CloudInitNetworkTypeEnumIPV4.Pointer()
+					if n.IP != "" {
+						net.IPAddress = pointy.String(n.IP)
+					}
+					if n.Netmask != "" {
+						net.Netmask = pointy.String(n.Netmask)
+					}
+					if n.Gateway != "" {
+						net.Routes = []*models.CloudInitNetWorkRoute{
+							{
+								Gateway: pointy.String(n.Gateway),
+								Netmask: pointy.String(n.Netmask),
+								Network: pointy.String("0.0.0.0"),
+							},
+						}
+					}
+				}
+				ci.Networks = append(ci.Networks, net)
+			}
+		}
+		p.CloudInit = ci
+	}
+
 	params := vm.NewCreateVMFromContentLibraryTemplateParams()
 	params.SetContext(ctx)
 	params.SetRequestBody([]*models.VMCreateVMFromContentLibraryTemplateParams{p})
