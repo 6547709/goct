@@ -25,20 +25,25 @@ import (
 //	--nic  vlan=<id|name>[,model=VIRTIO|E1000][,type=VLAN|VPC]
 func newCreate() *cobra.Command {
 	var (
-		name         string
-		clusterID    string
-		vcpu         int32
-		memoryMiB    int64
-		firmware     string
-		description  string
-		fromTemplate string
-		isFullCopy   bool
-		nicType      string
-		nicModel     string
-		nicVlan      string
-		ha           string
-		disks        []string
-		nics         []string
+		name              string
+		clusterID         string
+		vcpu              int32
+		memoryMiB         int64
+		firmware          string
+		description       string
+		fromTemplate      string
+		isFullCopy        bool
+		nicType           string
+		nicModel          string
+		nicVlan           string
+		ha                string
+		disks             []string
+		nics              []string
+		cloudInitHostname string
+		cloudInitPassword string
+		cloudInitSSHKey   []string
+		cloudInitUserData string
+		cloudInitNetworks []string
 	)
 	c := &cobra.Command{
 		Use: "vm.create", Short: "Create a new VM", GroupID: groupID,
@@ -63,6 +68,20 @@ Examples:
 			cli := client.From(c.Context())
 
 			if fromTemplate != "" {
+				// Build CloudInit spec if any cloud-init flag is set
+				var cloudInit *adapter.CloudInitSpec
+				if cloudInitHostname != "" || cloudInitPassword != "" || len(cloudInitSSHKey) > 0 || cloudInitUserData != "" || len(cloudInitNetworks) > 0 {
+					cloudInit = &adapter.CloudInitSpec{
+						Hostname:            cloudInitHostname,
+						DefaultUserPassword: cloudInitPassword,
+						PublicKeys:          cloudInitSSHKey,
+						UserData:            cloudInitUserData,
+					}
+					if len(cloudInitNetworks) > 0 {
+						cloudInit.Networks = parseCloudInitNetworks(cloudInitNetworks)
+					}
+				}
+
 				ref, err := service.NewVM(cli).CreateFromTemplate(c.Context(), adapter.VMCreateFromTemplateSpec{
 					TemplateID:  fromTemplate,
 					Name:        name,
@@ -77,6 +96,7 @@ Examples:
 						Model:  nicModel,
 						VlanID: nicVlan,
 					},
+					CloudInit: cloudInit,
 				})
 				if err != nil {
 					return err
@@ -138,6 +158,11 @@ Examples:
 	c.Flags().StringVar(&nicType, "nic-type", "", "NIC type: VLAN or VPC (only for --from-template)")
 	c.Flags().StringVar(&nicModel, "nic-model", "", "NIC model: E1000, SRIOV, VIRTIO (only for --from-template)")
 	c.Flags().StringVar(&nicVlan, "nic-vlan", "", "VLAN ID (only for --from-template)")
+	c.Flags().StringVar(&cloudInitHostname, "hostname", "", "Cloud-init hostname")
+	c.Flags().StringVar(&cloudInitPassword, "password", "", "Default user password (cloud-init)")
+	c.Flags().StringArrayVar(&cloudInitSSHKey, "ssh-key", nil, "SSH public key (repeatable)")
+	c.Flags().StringVar(&cloudInitUserData, "user-data", "", "Cloud-init user_data script")
+	c.Flags().StringArrayVar(&cloudInitNetworks, "network", nil, "Static IP config: nic=0,ip=192.168.1.100,netmask=255.255.255.0,gateway=192.168.1.1")
 	return c
 }
 
@@ -220,6 +245,34 @@ func parseHaFlag(s string) (*bool, error) {
 		return &v, nil
 	}
 	return nil, fmt.Errorf("invalid --ha %q (want true|false)", s)
+}
+
+// parseCloudInitNetworks parses --network flags into NicStaticConfig.
+// Flag format: nic=0,ip=192.168.1.100,netmask=255.255.255.0,gateway=192.168.1.1
+func parseCloudInitNetworks(raw []string) []adapter.NicStaticConfig {
+	out := make([]adapter.NicStaticConfig, 0, len(raw))
+	for _, s := range raw {
+		kv, err := parseKVList(s)
+		if err != nil {
+			continue
+		}
+		cfg := adapter.NicStaticConfig{}
+		if v, ok := kv["nic"]; ok {
+			if n, err := strconv.ParseInt(v, 10, 32); err == nil {
+				cfg.Index = int32(n)
+			}
+		}
+		cfg.IP = kv["ip"]
+		cfg.Netmask = kv["netmask"]
+		cfg.Gateway = kv["gateway"]
+		if cfg.IP != "" && cfg.Netmask != "" {
+			cfg.Type = "IPV4"
+		} else {
+			cfg.Type = "IPV4_DHCP"
+		}
+		out = append(out, cfg)
+	}
+	return out
 }
 
 // parseKVList 解析 "k1=v1,k2=v2" 字符串到 map；空字符串返回空 map。
