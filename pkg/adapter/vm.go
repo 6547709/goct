@@ -791,6 +791,9 @@ func (c *defaultClient) CreateVMFromTemplate(ctx context.Context, spec VMCreateF
 		if len(spec.CloudInit.PublicKeys) > 0 {
 			ci.PublicKeys = spec.CloudInit.PublicKeys
 		}
+		if len(spec.CloudInit.DNSServers) > 0 {
+			ci.Nameservers = spec.CloudInit.DNSServers
+		}
 		if spec.CloudInit.UserData != "" {
 			ci.UserData = pointy.String(spec.CloudInit.UserData)
 		}
@@ -803,7 +806,7 @@ func (c *defaultClient) CreateVMFromTemplate(ctx context.Context, spec VMCreateF
 				switch strings.ToUpper(n.Type) {
 				case "DHCP", "IPV4_DHCP":
 					net.Type = models.CloudInitNetworkTypeEnumIPV4DHCP.Pointer()
-				default: // IPV4 or empty
+				default: // IPV4 or empty = static IP
 					net.Type = models.CloudInitNetworkTypeEnumIPV4.Pointer()
 					if n.IP != "" {
 						net.IPAddress = pointy.String(n.IP)
@@ -811,16 +814,28 @@ func (c *defaultClient) CreateVMFromTemplate(ctx context.Context, spec VMCreateF
 					if n.Netmask != "" {
 						net.Netmask = pointy.String(n.Netmask)
 					}
+					// Build routes: default gateway route + custom routes
+					var routes []*models.CloudInitNetWorkRoute
 					if n.Gateway != "" {
-						net.Routes = []*models.CloudInitNetWorkRoute{
-							{
-								Gateway: pointy.String(n.Gateway),
-								Netmask: pointy.String(n.Netmask),
-								Network: pointy.String("0.0.0.0"),
-							},
-						}
+						// Default route (0.0.0.0/0)
+						routes = append(routes, &models.CloudInitNetWorkRoute{
+							Gateway: pointy.String(n.Gateway),
+							Netmask: pointy.String(n.Netmask),
+							Network: pointy.String("0.0.0.0"),
+						})
 					}
+					// Custom static routes (non-default)
+					for _, r := range n.Routes {
+						routes = append(routes, &models.CloudInitNetWorkRoute{
+							Gateway: pointy.String(r.Gateway),
+							Netmask: pointy.String(r.Netmask),
+							Network: pointy.String(r.Network),
+						})
+					}
+					net.Routes = routes
 				}
+				// Note: CloudInitNetWork does not support per-NIC DNS in SDK model.
+				// Global DNS from TemplateCloudInit.Nameservers applies to all NICs.
 				ci.Networks = append(ci.Networks, net)
 			}
 		}

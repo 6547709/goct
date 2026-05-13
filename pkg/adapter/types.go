@@ -277,18 +277,27 @@ type NicConfig struct {
 type CloudInitSpec struct {
 	Hostname            string            // VM hostname
 	DefaultUserPassword string            // Default user password
-	PublicKeys          []string          // SSH public keys
-	UserData            string            // Custom cloud-init user_data script
-	Networks            []NicStaticConfig // Static IP config per NIC
+	PublicKeys          []string          // SSH public keys (authorized_keys)
+	DNSServers          []string          // Global DNS nameservers
+	UserData            string            // Custom cloud-init user_data (YAML script or #cloud-config)
+	Networks            []NicStaticConfig // Per-NIC network configuration
 }
 
 // NicStaticConfig describes static IP configuration for one NIC.
 type NicStaticConfig struct {
-	Index   int32  // NIC index (0-based), required
-	IP      string // Static IP address
-	Netmask string // Netmask in dotted notation
-	Gateway string // Default gateway IP
-	Type    string // "IPV4" (static) or "IPV4_DHCP" (DHCP)
+	Index   int32         // NIC index (0-based), required
+	IP      string        // Static IP address (e.g. "192.168.1.100")
+	Netmask string        // Netmask in dotted notation (e.g. "255.255.255.0")
+	Gateway string        // Default gateway IP
+	Type    string        // "IPV4" (static) or "IPV4_DHCP" (DHCP)
+	Routes  []StaticRoute // Custom static routes (excluding default route)
+}
+
+// StaticRoute describes a static route entry.
+type StaticRoute struct {
+	Network string // Destination network (e.g. "10.0.0.0/8")
+	Netmask string // Netmask for the route (e.g. "255.0.0.0")
+	Gateway string // Next hop gateway
 }
 
 // VMCloneSpec 是 vm.clone 命令需要的参数集合。

@@ -2,6 +2,7 @@ package vm
 
 import (
 	"fmt"
+	"os"
 	"strconv"
 	"strings"
 
@@ -42,6 +43,7 @@ func newCreate() *cobra.Command {
 		cloudInitHostname string
 		cloudInitPassword string
 		cloudInitSSHKey   []string
+		cloudInitDNSServers []string
 		cloudInitUserData string
 		cloudInitNetworks []string
 	)
@@ -53,29 +55,54 @@ Two modes:
   1) From template (--from-template): use existing content library template.
   2) From scratch: build a VM with --disk / --nic flags.
 
+Cloud-init options (for --from-template):
+  --hostname string       Cloud-init hostname
+  --password string      Default user password
+  --ssh-key stringArray  SSH public key (literal string or @/path/to/key.pub, repeatable)
+  --dns stringArray      DNS nameserver (repeatable)
+  --user-data string     Cloud-init user_data (@/path/to/file.yaml or literal YAML)
+  --network stringArray  NIC config: nic=0[,ip=x][,netmask=x][,gateway=x][,route=x][,type=IPV4|DHCP]
+
 Examples:
-  goct vm.create --name web1 --cluster c1 --vcpu 2 --memory 2048 \
-                 --disk size=20g,bus=SCSI --nic vlan=vlan0,model=VIRTIO
+  # From template with cloud-init (static IP)
+  goct vm.create --name web1 --cluster c1 --from-template tpl1 \
+                 --hostname web1 --password 'Pass123' \
+                 --ssh-key @/home/user/.ssh/id_rsa.pub \
+                 --dns 8.8.8.8 --dns 8.8.4.4 \
+                 --network nic=0,ip=192.168.1.100,netmask=255.255.255.0,gateway=192.168.1.1
 
-  goct vm.create --name win1 --cluster c1 --vcpu 4 --memory 4096 \
-                 --firmware UEFI --ha=true \
-                 --disk size=60g,bus=SCSI --disk size=200g,bus=SCSI,name=data \
-                 --nic vlan=vlan0
+  # From template with cloud-init (DHCP)
+  goct vm.create --name web2 --cluster c1 --from-template tpl1 \
+                 --hostname web2 --ssh-key "ssh-rsa AAAA..." \
+                 --network nic=0,type=DHCP
 
-  goct vm.create --name from-tpl --cluster c1 --from-template tpl1 \
-                 --nic-vlan vlan0`,
+  # From template with custom user_data
+  goct vm.create --name web3 --cluster c1 --from-template tpl1 \
+                 --user-data @/path/to/cloud-config.yaml
+
+  # From scratch (no cloud-init)
+  goct vm.create --name web4 --cluster c1 --vcpu 2 --memory 2048 \
+                 --disk size=20g,bus=SCSI --nic vlan=vlan0,model=VIRTIO`,
 		RunE: func(c *cobra.Command, _ []string) error {
 			cli := client.From(c.Context())
 
 			if fromTemplate != "" {
 				// Build CloudInit spec if any cloud-init flag is set
 				var cloudInit *adapter.CloudInitSpec
-				if cloudInitHostname != "" || cloudInitPassword != "" || len(cloudInitSSHKey) > 0 || cloudInitUserData != "" || len(cloudInitNetworks) > 0 {
+				if cloudInitHostname != "" || cloudInitPassword != "" || len(cloudInitSSHKey) > 0 || len(cloudInitDNSServers) > 0 || cloudInitUserData != "" || len(cloudInitNetworks) > 0 {
 					cloudInit = &adapter.CloudInitSpec{
 						Hostname:            cloudInitHostname,
 						DefaultUserPassword: cloudInitPassword,
-						PublicKeys:          cloudInitSSHKey,
-						UserData:            cloudInitUserData,
+						DNSServers:          cloudInitDNSServers,
+					}
+					// Resolve @file paths for ssh-key and user-data
+					for _, key := range cloudInitSSHKey {
+						if resolved := resolveValue(key); resolved != "" {
+							cloudInit.PublicKeys = append(cloudInit.PublicKeys, resolved)
+						}
+					}
+					if cloudInitUserData != "" {
+						cloudInit.UserData = resolveValue(cloudInitUserData)
 					}
 					if len(cloudInitNetworks) > 0 {
 						cloudInit.Networks = parseCloudInitNetworks(cloudInitNetworks)
@@ -160,9 +187,10 @@ Examples:
 	c.Flags().StringVar(&nicVlan, "nic-vlan", "", "VLAN ID (only for --from-template)")
 	c.Flags().StringVar(&cloudInitHostname, "hostname", "", "Cloud-init hostname")
 	c.Flags().StringVar(&cloudInitPassword, "password", "", "Default user password (cloud-init)")
-	c.Flags().StringArrayVar(&cloudInitSSHKey, "ssh-key", nil, "SSH public key (repeatable)")
-	c.Flags().StringVar(&cloudInitUserData, "user-data", "", "Cloud-init user_data script")
-	c.Flags().StringArrayVar(&cloudInitNetworks, "network", nil, "Static IP config: nic=0,ip=192.168.1.100,netmask=255.255.255.0,gateway=192.168.1.1")
+	c.Flags().StringArrayVar(&cloudInitSSHKey, "ssh-key", nil, "SSH public key (literal or @/path/to/key.pub)")
+	c.Flags().StringArrayVar(&cloudInitDNSServers, "dns", nil, "DNS nameserver (repeatable, e.g. --dns 8.8.8.8)")
+	c.Flags().StringVar(&cloudInitUserData, "user-data", "", "Cloud-init user_data (@/path/to/file.yaml or literal YAML)")
+	c.Flags().StringArrayVar(&cloudInitNetworks, "network", nil, "NIC config: nic=0[,ip=x][,netmask=x][,gateway=x][,route=10.0.0.0/8:192.168.1.1][,type=IPV4|DHCP]")
 	return c
 }
 
@@ -248,31 +276,85 @@ func parseHaFlag(s string) (*bool, error) {
 }
 
 // parseCloudInitNetworks parses --network flags into NicStaticConfig.
-// Flag format: nic=0,ip=192.168.1.100,netmask=255.255.255.0,gateway=192.168.1.1
+// Flag format: nic=0[,ip=x][,netmask=x][,gateway=x][,route=10.0.0.0/8:192.168.1.1][,type=IPV4|DHCP]
+// Examples:
+//   nic=0,ip=192.168.1.100,netmask=255.255.255.0,gateway=192.168.1.1,type=IPV4
+//   nic=0,type=DHCP
+//   nic=0,ip=192.168.1.100,netmask=255.255.255.0,gateway=192.168.1.1,route=10.0.0.0/8:192.168.1.1
 func parseCloudInitNetworks(raw []string) []adapter.NicStaticConfig {
 	out := make([]adapter.NicStaticConfig, 0, len(raw))
 	for _, s := range raw {
 		kv, err := parseKVList(s)
 		if err != nil {
+			fmt.Fprintf(os.Stderr, "warn: invalid --network %q: %v\n", s, err)
 			continue
 		}
 		cfg := adapter.NicStaticConfig{}
+
+		// NIC index (required)
 		if v, ok := kv["nic"]; ok {
 			if n, err := strconv.ParseInt(v, 10, 32); err == nil {
 				cfg.Index = int32(n)
 			}
 		}
+
+		// Static IP config
 		cfg.IP = kv["ip"]
 		cfg.Netmask = kv["netmask"]
 		cfg.Gateway = kv["gateway"]
-		if cfg.IP != "" && cfg.Netmask != "" {
+
+		// Type: explicit IPV4/DHCP or auto-detect from ip presence
+		if t := strings.ToUpper(kv["type"]); t != "" {
+			cfg.Type = t
+		} else if cfg.IP != "" && cfg.Netmask != "" {
 			cfg.Type = "IPV4"
 		} else {
 			cfg.Type = "IPV4_DHCP"
 		}
+
+		// Custom static routes (format: network/netmask:gateway, repeatable with semicolon)
+		if routeStr := kv["route"]; routeStr != "" {
+			for _, route := range strings.Split(routeStr, ";") {
+				route = strings.TrimSpace(route)
+				if route == "" {
+					continue
+				}
+				// Format: network/netmask:gateway (e.g. 10.0.0.0/8:192.168.1.1)
+				parts := strings.Split(route, ":")
+				if len(parts) != 2 {
+					continue
+				}
+				netParts := strings.Split(parts[0], "/")
+				if len(netParts) != 2 {
+					continue
+				}
+				cfg.Routes = append(cfg.Routes, adapter.StaticRoute{
+					Network: netParts[0],
+					Netmask: netParts[1],
+					Gateway: strings.TrimSpace(parts[1]),
+				})
+			}
+		}
+
 		out = append(out, cfg)
 	}
 	return out
+}
+
+// resolveValue resolves @file paths or returns the literal value.
+// If s starts with "@", reads the file at the path and returns its content.
+// Otherwise returns s as-is.
+func resolveValue(s string) string {
+	if strings.HasPrefix(s, "@") {
+		path := strings.TrimPrefix(s, "@")
+		data, err := os.ReadFile(path)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "warn: failed to read file %q: %v\n", path, err)
+			return ""
+		}
+		return string(data)
+	}
+	return s
 }
 
 // parseKVList 解析 "k1=v1,k2=v2" 字符串到 map；空字符串返回空 map。
