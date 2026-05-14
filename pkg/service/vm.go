@@ -152,11 +152,53 @@ func (s *VMService) ShutDown(ctx context.Context, idOrName string) (adapter.Task
 }
 
 // AddDisk 添加磁盘到 VM。
+// 如果 spec.StoragePolicy 为空，则从集群设置获取默认存储策略。
+// 如果 spec.Bus 为空，则使用系统盘（boot=2）的总线类型。
 func (s *VMService) AddDisk(ctx context.Context, vmIDOrName string, spec adapter.DiskAddSpec) (adapter.TaskRef, error) {
 	v, err := s.Resolve(ctx, vmIDOrName)
 	if err != nil {
 		return adapter.TaskRef{}, err
 	}
+
+	// 如果未指定存储策略，从集群设置获取默认存储策略
+	if spec.StoragePolicy == "" {
+		settings, err := s.c.GetClusterSettings(ctx, v.ClusterID)
+		if err != nil {
+			return adapter.TaskRef{}, fmt.Errorf("get cluster settings for default storage policy: %w", err)
+		}
+		if settings.DefaultStoragePolicy != "" {
+			spec.StoragePolicy = settings.DefaultStoragePolicy
+		}
+	}
+
+	// 如果未指定总线类型，从系统盘获取
+	if spec.Bus == "" {
+		disks, err := s.c.ListVMDisks(ctx, v.ID)
+		if err != nil {
+			return adapter.TaskRef{}, fmt.Errorf("list vm disks to get default bus: %w", err)
+		}
+		// 找到系统盘（boot=3）或第一个数据盘，排除 CD_ROM
+		for _, d := range disks {
+			if d.Type == "DISK" {
+				if d.Boot == 3 || spec.Bus == "" { // 系统盘 boot=3
+					spec.Bus = d.Bus
+					if d.Boot == 3 {
+						break // 找到系统盘就停止
+					}
+				}
+			}
+		}
+		// 如果没找到系统盘，用第一个数据盘的 bus
+		if spec.Bus == "" && len(disks) > 0 {
+			for _, d := range disks {
+				if d.Type == "DISK" {
+					spec.Bus = d.Bus
+					break
+				}
+			}
+		}
+	}
+
 	return s.c.AddDisk(ctx, v.ID, spec)
 }
 
@@ -293,10 +335,15 @@ func (s *VMService) CreateFromTemplate(ctx context.Context, spec adapter.VMCreat
 		return adapter.TaskRef{}, err
 	}
 
-	// Resolve template name to ID
-	templateID, err := s.resolveTemplateID(ctx, spec.TemplateID)
+	// Resolve template name to ID, and auto-fill firmware if not specified
+	template, err := s.resolveTemplate(ctx, spec.TemplateID)
 	if err != nil {
 		return adapter.TaskRef{}, err
+	}
+
+	// Auto-fill firmware from template if not explicitly specified
+	if spec.Firmware == "" && template.Firmware != "" {
+		spec.Firmware = template.Firmware
 	}
 
 	// Resolve VLAN name to ID if specified
@@ -309,7 +356,7 @@ func (s *VMService) CreateFromTemplate(ctx context.Context, spec adapter.VMCreat
 	}
 
 	spec.ClusterID = clusterID
-	spec.TemplateID = templateID
+	spec.TemplateID = template.ID
 
 	return s.c.CreateVMFromTemplate(ctx, spec)
 }
@@ -324,6 +371,26 @@ func (s *VMService) resolveClusterID(ctx context.Context, nameOrID string) (stri
 		return "", fmt.Errorf("resolve cluster %q: %w", nameOrID, err)
 	}
 	return cluster.ID, nil
+}
+
+// resolveTemplate resolves template name to ContentLibraryTemplate. If already an ID, fetches it.
+func (s *VMService) resolveTemplate(ctx context.Context, nameOrID string) (*adapter.ContentLibraryTemplate, error) {
+	if IsID(nameOrID) {
+		// For ID, we need to find it by ID - use ListContentLibraryTemplates with ID filter
+		templates, err := s.c.ListContentLibraryTemplates(ctx, adapter.ListOpts{FilterID: nameOrID})
+		if err != nil {
+			return nil, fmt.Errorf("resolve template %q: %w", nameOrID, err)
+		}
+		if len(templates) == 0 {
+			return nil, fmt.Errorf("template not found: %s", nameOrID)
+		}
+		return &templates[0], nil
+	}
+	tpl, err := s.c.GetContentLibraryTemplateByName(ctx, nameOrID)
+	if err != nil {
+		return nil, fmt.Errorf("resolve template %q: %w", nameOrID, err)
+	}
+	return tpl, nil
 }
 
 // resolveTemplateID resolves template name to ID. If already an ID, returns it as-is.

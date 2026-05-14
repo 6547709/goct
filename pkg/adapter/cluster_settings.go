@@ -45,5 +45,8 @@ func toClusterSettings(s *models.ClusterSettings) *ClusterSettings {
 	if s.Cluster != nil && s.Cluster.ID != nil {
 		out.ClusterID = *s.Cluster.ID
 	}
+	if s.DefaultStoragePolicy != nil {
+		out.DefaultStoragePolicy = string(*s.DefaultStoragePolicy)
+	}
 	return out
 }

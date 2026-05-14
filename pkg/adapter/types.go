@@ -96,6 +96,7 @@ type ListOpts struct {
 	Name         string // 精确匹配，服务端走 = 过滤
 	NameContains string // 模糊匹配，服务端走 contains 过滤
 	ClusterID    string
+	FilterID     string // 按 ID 精确过滤
 	Limit        int32
 	Skip         int32
 	InRecycleBin *bool // nil=不过滤, true=仅回收站, false=仅正常VM
@@ -327,12 +328,13 @@ type VMUpdateSpec struct {
 
 // DiskAddSpec 是 vm disk.add 命令的参数。
 type DiskAddSpec struct {
-	Name      string
-	SizeBytes int64
-	Bus       string // SCSI / SATA / NVMe / IDE / VIRTIO
-	Index     int32
-	Boot      int32
-	IOPSMax   int64
+	Name             string
+	SizeBytes        int64
+	Bus              string // SCSI / SATA / NVMe / IDE / VIRTIO
+	Index            int32
+	Boot             int32
+	IOPSMax          int64
+	StoragePolicy    string // 可选：不指定则使用集群默认存储策略（如 ELF_CP_REPLICA_2_THICK_PROVISION）
 }
 
 // CdRomAddSpec 是 vm cdrom.add 命令的参数。
@@ -651,8 +653,9 @@ type License struct {
 
 // ClusterSettings 是 CLI 内部用的集群设置视图。
 type ClusterSettings struct {
-	ID        string
-	ClusterID string
+	ID                  string
+	ClusterID           string
+	DefaultStoragePolicy string // e.g. "ELF_CP_REPLICA_2_THICK_PROVISION"
 }
 
 // NtpSettings 是 CLI 内部用的 NTP 设置视图。

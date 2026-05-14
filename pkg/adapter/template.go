@@ -22,6 +22,7 @@ type ContentLibraryTemplate struct {
 	Name               string
 	Description        string
 	VMID               string
+	Firmware           string // BIOS or UEFI
 	CloudInitSupported bool
 }
 
@@ -31,6 +32,10 @@ func (c *defaultClient) ListContentLibraryTemplates(ctx context.Context, opts Li
 	body := &models.GetContentLibraryVMTemplatesRequestBody{}
 	where := &models.ContentLibraryVMTemplateWhereInput{}
 	hasWhere := false
+	if opts.FilterID != "" {
+		where.ID = &opts.FilterID
+		hasWhere = true
+	}
 	if opts.NameContains != "" {
 		where.Name = pointy.String(opts.NameContains)
 		hasWhere = true
@@ -95,6 +100,9 @@ func toContentLibraryTemplate(t *models.ContentLibraryVMTemplate) ContentLibrary
 	}
 	if t.Description != nil {
 		out.Description = *t.Description
+	}
+	if t.Firmware != nil {
+		out.Firmware = string(*t.Firmware)
 	}
 	if t.CloudInitSupported != nil {
 		out.CloudInitSupported = *t.CloudInitSupported

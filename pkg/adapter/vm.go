@@ -479,18 +479,26 @@ func (c *defaultClient) AddDisk(ctx context.Context, vmID string, spec DiskAddSp
 		bootVal = spec.Boot
 	}
 
+	vmVolume := &models.MountNewCreateDisksParamsVMVolume{
+		Name: pointy.String(spec.Name),
+		Size: pointy.Int64(spec.SizeBytes),
+	}
+
+	// 设置存储策略
+	if spec.StoragePolicy != "" {
+		sp := models.VMVolumeElfStoragePolicyType(spec.StoragePolicy)
+		vmVolume.ElfStoragePolicy = &sp
+	}
+
 	data := &models.VMAddDiskParamsData{
 		VMDisks: &models.VMAddDiskParamsDataVMDisks{
 			MountNewCreateDisks: []*models.MountNewCreateDisksParams{
 				{
-					Boot:  pointy.Int32(bootVal),
-					Bus:   &bus,
-					Index: pointy.Int32(spec.Index),
-					VMVolume: &models.MountNewCreateDisksParamsVMVolume{
-						Name: pointy.String(spec.Name),
-						Size: pointy.Int64(spec.SizeBytes),
-					},
-					MaxIops: pointy.Int64(spec.IOPSMax),
+					Boot:     pointy.Int32(bootVal),
+					Bus:      &bus,
+					Index:    pointy.Int32(spec.Index),
+					VMVolume: vmVolume,
+					MaxIops:  pointy.Int64(spec.IOPSMax),
 				},
 			},
 		},
