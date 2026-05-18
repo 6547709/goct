@@ -140,8 +140,9 @@ for i in "${!GROUP_NAMES[@]}"; do
         # 格式：-h, --help 等一行一个 flag
         local_flags=$(echo "$help_output" | sed -n '/^Flags:$/,/^Global Flags:/p' | grep -E "^\s+-" | sed 's/^/    /')
         if [[ -n "$local_flags" ]]; then
-            echo "Flags:" >> "$OUTPUT"
+            echo '```' >> "$OUTPUT"
             echo "$local_flags" >> "$OUTPUT"
+            echo '```' >> "$OUTPUT"
             echo "" >> "$OUTPUT"
         fi
 
