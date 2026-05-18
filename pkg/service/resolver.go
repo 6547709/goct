@@ -17,18 +17,14 @@ import (
 // uuidRe 匹配标准 UUID（36 字符）。
 var uuidRe = regexp.MustCompile(`^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$`)
 
-// cuidRe 匹配 CloudTower 实际使用的 cuid 形态。
+// cuidRe 匹配 CloudTower 资源 ID（cuid 格式）。
 //
-// 经验事实（来自 v2 真实响应）：CloudTower 资源 ID 是 27 字符的 cuid，
-// 形如 "cl" + 25 位小写字母数字（cuid v1 的 timestamp + counter + fingerprint + random）。
+// 格式：c + 小写字母 + 22-24 个小写字母或数字 = 24-26 字符
+// 当前已知前缀：cm（25字符，如 cmowkefxp039m0818ld8uli5x）
+// 未来可能扩展：cn、ck 等新前缀
 //
-// 历史正则 `^[a-z]{2}[0-9a-z]{23,25}$` 把"前两位任意小写字母"放得太宽：
-// 用户取一个 25–27 字符全小写字母数字的 VM 名（如 "abcdefghij1234567890123"）会被误判成 ID。
-//
-// 现在收紧到 `^cl[0-9a-z]{25}$`（共 27 字符）：
-//   - 仍能匹配真实 CloudTower 的所有 cuid（前缀 cl 固定）；
-//   - 用户可读名字几乎不可能恰好 27 字符且全小写字母数字且以 "cl" 开头。
-var cuidRe = regexp.MustCompile(`^cl[0-9a-z]{25}$`)
+// 排除：ca（易与 "ca" 开头的人类可读名称混淆）
+var cuidRe = regexp.MustCompile(`^c[a-np-z][0-9a-z]{22,24}$`)
 
 // IsID 报告 s 是否看起来像一个 ID（UUID 或 cuid），而非用户可读的名称。
 // CloudTower 同时使用两种 ID 格式：

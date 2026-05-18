@@ -533,18 +533,22 @@ func TestResolver_IsID(t *testing.T) {
 		// UUID
 		{"aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", true},
 		{"5e52cf6e-1e8c-4a0a-9e3a-1b2c3d4e5f6a", true},
-		// cuid (CloudTower style, 27 chars: cl + 25)
-		{"cl5k7g2xo04070822fhxjfsev9q", true},
-		{"cl0000000000000000000000000", true},
+		// cuid (CloudTower style, 24-26 chars: c + letter + 22-24 alphanum)
+		// 当前已知：cm 开头 25 字符（如 cmowkefxp039m0818ld8uli5x）
+		{"cmowkefxp039m0818ld8uli5x", true},   // cm prefix, 25 chars
+		{"cm00000000000000000000000", true},    // cm prefix, 25 chars
+		// 未来可能扩展的前缀（如 cn）
+		{"cndummy000000000000000000", true},    // cn prefix, 24 chars
 		// Not IDs
 		{"my-vm-name", false},
 		{"web-server-01", false},
 		{"", false},
-		{"cl", false},                            // too short
-		{"CL5K7G2XO04070822FHXJFSEV9Q", false},   // cuid is lowercase
+		{"cm", false},                            // too short
+		{"CMOWKEFXP039M0818LD8ULI5X", false},   // cuid is lowercase
 		// Bug 13 regression: long lowercase name must not be misclassified as cuid
-		{"abcdefghij1234567890abcde", false},     // 25 chars but doesn't start with "cl"
-		{"abcdefghij12345678901234567", false},   // 27 chars but no "cl" prefix
+		{"abcdefghij1234567890abcde", false},    // 25 chars but wrong prefix (no 'c' prefix)
+		{"abcdefghij12345678901234567", false},  // 27 chars wrong format
+		{"c0000000000000000000000000", false},   // 25 chars but second char is digit (should be letter)
 	}
 	for _, tt := range tests {
 		if got := IsID(tt.in); got != tt.want {

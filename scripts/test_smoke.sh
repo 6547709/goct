@@ -71,6 +71,9 @@ run_cmd  "session.ls"                 $GOCT session.ls
 run_cmd  "about"                      $GOCT about
 expect_json "about --format json"     $GOCT about --format json
 
+# 自动获取 cluster ID 供后续命令使用
+FIRST_CLUSTER_ID=$($GOCT cluster.ls --format json 2>/dev/null | jq -r '.[0].ID // empty' 2>/dev/null || true)
+
 # =========================================================
 # Phase C — 各资源 ls + JSON 输出
 # =========================================================
@@ -93,7 +96,6 @@ declare -a LS_CMDS=(
     "deploy.ls"
     "license.ls"
     "ntp.get"
-    "cluster-settings.get"
     "content-library-image.ls"
 )
 
@@ -188,6 +190,16 @@ FIRST_CLUSTER_NAME=$($GOCT cluster.ls --format json 2>/dev/null | jq -r '.[0].Na
 if [[ -n "$FIRST_CLUSTER_ID" && -n "$FIRST_CLUSTER_NAME" ]]; then
     run_cmd "cluster.info by ID   ($FIRST_CLUSTER_ID)"   $GOCT cluster.info "$FIRST_CLUSTER_ID"
     run_cmd "cluster.info by Name ($FIRST_CLUSTER_NAME)" $GOCT cluster.info "$FIRST_CLUSTER_NAME"
+fi
+
+# =========================================================
+# Phase G2 — cluster-settings.get（依赖 FIRST_CLUSTER_ID）
+# =========================================================
+
+if [[ -n "$FIRST_CLUSTER_ID" ]]; then
+    log_section "Phase G2 — cluster-settings.get"
+    run_cmd     "cluster-settings.get --cluster $FIRST_CLUSTER_ID"   $GOCT cluster-settings.get --cluster "$FIRST_CLUSTER_ID"
+    run_cmd     "cluster-settings.get --json --cluster $FIRST_CLUSTER_ID"   $GOCT cluster-settings.get --cluster "$FIRST_CLUSTER_ID" --format json
 fi
 
 # =========================================================
